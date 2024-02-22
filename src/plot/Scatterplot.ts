@@ -3,21 +3,25 @@ import {Selection} from "d3";
 import {Plot} from "./plot.ts";
 
 /**
- * A class to generate a connected scatterplot
+ * A class to generate a scatterplot
+ *
+ * @param connected whether the scatterplot should be connected
  */
-export class ConnectedScatterplot implements Plot {
+export class Scatterplot implements Plot {
     container: HTMLElement
     svg: Selection<SVGSVGElement, undefined, null, undefined> | null
     width: number
     height: number
     margin: number
+    connected: boolean
 
-    constructor(container: HTMLElement, width: number, height: number, margin: number) {
+    constructor(container: HTMLElement, width: number, height: number, margin: number, connected: boolean = false) {
         this.container = container
         this.svg = null
         this.width = width
         this.height = height
         this.margin = margin
+        this.connected = connected
     }
 
     generate(data?: number[]): void {
@@ -65,22 +69,24 @@ export class ConnectedScatterplot implements Plot {
 
         this.generateAxis(this.svg, xAxis, yAxis)
 
-        //line
-        this.svg.append('path')
-            .datum(data)
-            .attr('fill', 'none')
-            .attr('stroke', 'black')
-            .attr('stroke-width', 1.5)
-            .attr('d', d3.line<number>().x((_, i) => xAxis(i + 1)).y(d => yAxis(d)))
+        if(this.connected) {
+            //line
+            this.svg.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1.5)
+                .attr('d', d3.line<number>().x((_, i) => xAxis(i + 1)).y(d => yAxis(d)))
+        }
 
         //dots
         this.svg.append('g')
             .attr('fill', 'white')
             .attr('stroke', 'black')
             .attr('stroke-width', 1.5)
-        .selectAll('circle')
-        .data(data)
-        .join('circle')
+            .selectAll('circle')
+            .data(data)
+            .join('circle')
             .attr('cx', (_, i) => xAxis(i + 1))
             .attr('cy', yAxis)
             .attr('r', 3)
