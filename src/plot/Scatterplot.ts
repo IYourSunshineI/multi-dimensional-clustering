@@ -31,7 +31,7 @@ export class Scatterplot implements Plot {
             .attr('width', this.width)
             .attr('height', this.height)
             .attr("viewBox", [0, 0, this.width, this.height])
-            .attr("style", "max-width: 100%; height: auto;");
+            .attr("style", "max-width: 100%; height: auto;")
 
 
         if (data) {

@@ -31,7 +31,8 @@ export class ScatterMatrix implements Plot {
             .attr('width', this.width)
             .attr('height', this.height)
             .attr("viewBox", [0, 0, this.width, this.height])
-            .attr("style", "max-width: 100%; height: auto;");
+            .attr("style", "max-width: 100%; height: auto;")
+            .style('overflow', 'visible')
 
         if (data) {
             this.update(data)
@@ -126,7 +127,7 @@ export class ScatterMatrix implements Plot {
             .attr('transform', (_, i) => `translate(${i * cellWidth + this.margin}, ${this.height - this.margin})`)
             .each(function (x, i, arr) {
                 // @ts-ignore
-                d3.select(this).call(d3.axisBottom(x).ticks(6))
+                d3.select(this).call(d3.axisBottom(x).ticks(5))
                     .call(g => g.select('.domain').remove())
                     .call(g => g.selectAll('.tick line').clone()
                         .attr('y2',  -cellHeight * (arr.length - i) + self.margin / 2 - 5)
@@ -142,7 +143,7 @@ export class ScatterMatrix implements Plot {
             .attr('transform', (_, i) => `translate(${this.margin}, ${(i + 1) * cellHeight})`)
             .each(function (y, i) {
                 // @ts-ignore
-                d3.select(this).call(d3.axisLeft(y).ticks(6))
+                d3.select(this).call(d3.axisLeft(y).ticks(5))
                     .call(g => g.select('.domain').remove())
                     .call(g => g.selectAll('.tick line').clone()
                         .attr('x2', cellWidth * (i + 1) - self.margin / 2 + 5)

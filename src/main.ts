@@ -8,6 +8,11 @@ if(elbowDomObj) {
     var plot = new Scatterplot(elbowDomObj, 500, 250, 30, true)
     plot.generate(data)
 }
+const timeLineDomObj = document.getElementById('timeline')
+if(timeLineDomObj) {
+    var plot = new Scatterplot(timeLineDomObj, 500, 250, 30, false)
+    plot.generate(data)
+}
 
 //d3.csv('../../datasets/grove_sensors.csv').then(data => {
 //    console.log(data.columns.filter(d => typeof data[0][d] === 'number'))
@@ -47,7 +52,7 @@ const scatterData: number[][] = [
     [18.03029033,2.643089671,29.84926395,1.495874739,0.14890336,-0.221918577,1.479321932]
 ]
 if(scatterMatrixDomObj) {
-    const scatterMatrix = new ScatterMatrix(scatterMatrixDomObj, 900, 900, 15, ['acce_max', 'acce_min', 'acce_std', 'stride_length', 'step_heading', 'rel_pos_x', 'rel_pos_y']);
+    const scatterMatrix = new ScatterMatrix(scatterMatrixDomObj, 850, 850, 15, ['acce_max', 'acce_min', 'acce_std', 'stride_length', 'step_heading', 'rel_pos_x', 'rel_pos_y']);
     scatterMatrix.generate(scatterData)
 }
 
