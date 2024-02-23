@@ -117,34 +117,37 @@ export class ScatterMatrix implements Plot {
     addAxis(svg: d3.Selection<SVGSVGElement, undefined, null, undefined>, cellWidth: number, cellHeight: number,
             xScale: any, yScale: any) {
         //generate x-axis
+        const self = this
         svg.append('g')
             .selectAll('g')
             .data(xScale)
             .join('g')
+            .filter((_, i) => i < this.attributes.length - 1)
             .attr('transform', (_, i) => `translate(${i * cellWidth + this.margin}, ${this.height - this.margin})`)
-            .each(function (x) {
+            .each(function (x, i, arr) {
                 // @ts-ignore
-                return d3.select(this).call(d3.axisBottom(x).ticks(6));
+                d3.select(this).call(d3.axisBottom(x).ticks(6))
+                    .call(g => g.select('.domain').remove())
+                    .call(g => g.selectAll('.tick line').clone()
+                        .attr('y2',  -cellHeight * (arr.length - i) + self.margin / 2 - 5)
+                        .attr('stroke-opacity', 0.1))
             })
-            .call(g => g.select('.domain').remove())
-            .call(g => g.selectAll('.tick line').clone()
-                .attr('y2', -this.height)
-                .attr('stroke-opacity', 0.1))
 
         //generate y-axis
         svg.append('g')
             .selectAll('g')
             .data(yScale)
             .join('g')
-            .attr('transform', (_, i) => `translate(${this.margin}, ${i * cellHeight})`)
-            .each(function (y) {
+            .filter((_, i) => i !== 0)
+            .attr('transform', (_, i) => `translate(${this.margin}, ${(i + 1) * cellHeight})`)
+            .each(function (y, i) {
                 // @ts-ignore
-                return d3.select(this).call(d3.axisLeft(y).ticks(6));
+                d3.select(this).call(d3.axisLeft(y).ticks(6))
+                    .call(g => g.select('.domain').remove())
+                    .call(g => g.selectAll('.tick line').clone()
+                        .attr('x2', cellWidth * (i + 1) - self.margin / 2 + 5)
+                        .attr('stroke-opacity', 0.1))
             })
-            .call(g => g.select('.domain').remove())
-            .call(g => g.selectAll('.tick line').clone()
-                .attr('x2', this.width)
-                .attr('stroke-opacity', 0.1))
     }
 
     /**
@@ -159,6 +162,7 @@ export class ScatterMatrix implements Plot {
             .selectAll('g')
             .data(d3.cross(d3.range(this.attributes.length), d3.range(this.attributes.length)))
             .join('g')
+            .filter(([i, j]) => i <= j)
             .attr('transform', ([i, j]) => `translate(${i * cellWidth + this.margin}, ${j * cellHeight})`)
             .append('rect')
             .attr('fill', 'none')
