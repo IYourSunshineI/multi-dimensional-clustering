@@ -1,3 +1,5 @@
+//taken and adapted from https://observablehq.com/@d3/connected-scatterplot/2?intent=fork
+
 import * as d3 from "d3";
 import {Selection} from "d3";
 import {Plot} from "./plot.ts";
@@ -47,7 +49,7 @@ export class Scatterplot implements Plot {
             .domain([0, 100])
             .range([this.height - this.margin, this.margin])
 
-        this.generateAxis(this.svg, xAxis, yAxis)
+        this.addAxis(this.svg, xAxis, yAxis)
 
         this.container.append(this.svg.node()!)
     }
@@ -67,7 +69,7 @@ export class Scatterplot implements Plot {
             .range([this.height - this.margin, this.margin])
 
 
-        this.generateAxis(this.svg, xAxis, yAxis)
+        this.addAxis(this.svg, xAxis, yAxis)
 
         if(this.connected) {
             //line
@@ -102,7 +104,7 @@ export class Scatterplot implements Plot {
      * @param xAxis the x-axis scale
      * @param yAxis the y-axis scale
      */
-    generateAxis(svg: Selection<SVGSVGElement, undefined, null, undefined>, xAxis: d3.ScaleLinear<number, number>, yAxis: d3.ScaleLinear<number, number>) {
+    addAxis(svg: Selection<SVGSVGElement, undefined, null, undefined>, xAxis: d3.ScaleLinear<number, number>, yAxis: d3.ScaleLinear<number, number>) {
         svg.append('g')
             .attr('transform', `translate(0, ${this.height - this.margin})`)
             .call(d3.axisBottom(xAxis))
