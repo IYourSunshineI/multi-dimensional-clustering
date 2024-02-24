@@ -3,26 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./src/style.css">
+      <link rel="stylesheet" href="./src/style.css">
+      <link rel="stylesheet" href="./src/colors.css">
     <title>Multidimensional Clustering</title>
   </head>
   <body>
     <div class="container">
         <div class="left">
-          <p>Scatter Matrix</p>
-          <div id="scatterMatrix"></div>
+            <div class="header">
+                <img src="./public/logo.png" alt="logo" class="logo">
+            </div>
+
+            <div class="content">
+                <div>
+                  <div id="elbow"></div>
+                </div>
+
+                <div>
+                  <div id="timeline"></div>
+                </div>
+            </div>
         </div>
 
         <div class="right">
-            <div>
-              <p>Elbow</p>
-              <div id="elbow"></div>
-            </div>
-
-            <div>
-              <p>Timeline</p>
-              <div id="timeline"></div>
-            </div>
+            <div id="scatterMatrix"></div>
         </div>
     </div>
     <script type="module" src="./src/main.ts"></script>

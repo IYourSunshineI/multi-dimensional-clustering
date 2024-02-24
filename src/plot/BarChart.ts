@@ -3,7 +3,7 @@
 import {Plot} from "./Plot.ts";
 import * as d3 from "d3";
 import {Selection} from "d3";
-import {TimeDataGroup} from "../objects/TimeDataGroup.ts";
+import {TimeDataGroup} from "../utils/TimeDataGroup.ts";
 
 export class BarChart implements Plot {
     container: HTMLElement;

@@ -1,7 +1,7 @@
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 import {BarChart} from "./plot/BarChart.ts";
-import {TimeDataGroup} from "./objects/TimeDataGroup.ts";
+import {TimeDataGroup} from "./utils/TimeDataGroup.ts";
 
 const data: number[] = [1, 4.2, 3, 4, 5, 5, 6, 6.2, 8, 9]
 
@@ -16,12 +16,22 @@ const timeData: TimeDataGroup[] = [
     {countPerCluster: [7, 1, 2], timestamp: 'day2'},
     {countPerCluster: [3, 7, 0], timestamp: 'day3'},
     {countPerCluster: [4, 4, 2], timestamp: 'day4'},
-    {countPerCluster: [5, 3, 2], timestamp: 'day5'}
+    {countPerCluster: [5, 3, 2], timestamp: 'day5'},
+    {countPerCluster: [7, 1, 2], timestamp: 'day6'},
+    {countPerCluster: [3, 7, 0], timestamp: 'day7'},
+    {countPerCluster: [4, 4, 2], timestamp: 'day8'},
+    {countPerCluster: [5, 3, 2], timestamp: 'day9'},
+    {countPerCluster: [7, 1, 2], timestamp: 'day10'},
+    {countPerCluster: [3, 7, 0], timestamp: 'day11'},
+    {countPerCluster: [4, 4, 2], timestamp: 'day12'},
+    {countPerCluster: [5, 3, 2], timestamp: 'day13'},
+    {countPerCluster: [7, 1, 2], timestamp: 'day14'},
+    {countPerCluster: [3, 7, 0], timestamp: 'day15'},
 ]
 
 const timeLineDomObj = document.getElementById('timeline')
 if(timeLineDomObj) {
-    var asdf = new BarChart(timeLineDomObj, 500, 250, 30)
+    var asdf = new BarChart(timeLineDomObj, 850, 250, 30)
     asdf.generate(timeData)
 }
 

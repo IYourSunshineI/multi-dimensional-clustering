@@ -13,6 +13,7 @@ dist-ssr
 *.local
 /test
 /datasets
+/public/logo.xcf
 
 # Editor directories and files
 .vscode/*
