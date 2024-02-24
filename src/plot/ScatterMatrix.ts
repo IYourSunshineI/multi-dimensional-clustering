@@ -67,6 +67,9 @@ export class ScatterMatrix implements Plot {
     update(data: number[][]): void {
         if (!this.svg) return
 
+        //removes children of svg obj
+        this.svg.selectAll('g').remove()
+
         const cellWidth = (this.width - (this.attributes.length + 1) * this.margin) / this.attributes.length + this.margin
         const cellHeight = (this.height - (this.attributes.length + 1) * this.margin) / this.attributes.length + this.margin
 
