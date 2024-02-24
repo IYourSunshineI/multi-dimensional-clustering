@@ -1,5 +1,7 @@
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
+import {BarChart} from "./plot/BarChart.ts";
+import {TimeDataGroup} from "./objects/TimeDataGroup.ts";
 
 const data: number[] = [1, 4.2, 3, 4, 5, 5, 6, 6.2, 8, 9]
 
@@ -8,10 +10,19 @@ if(elbowDomObj) {
     var plot = new Scatterplot(elbowDomObj, 500, 250, 30, true)
     plot.generate(data)
 }
+
+const timeData: TimeDataGroup[] = [
+    {countPerCluster: [5, 3, 2], timestamp: 'day1'},
+    {countPerCluster: [7, 1, 2], timestamp: 'day2'},
+    {countPerCluster: [3, 7, 0], timestamp: 'day3'},
+    {countPerCluster: [4, 4, 2], timestamp: 'day4'},
+    {countPerCluster: [5, 3, 2], timestamp: 'day5'}
+]
+
 const timeLineDomObj = document.getElementById('timeline')
 if(timeLineDomObj) {
-    var plot = new Scatterplot(timeLineDomObj, 500, 250, 30, false)
-    plot.generate(data)
+    var asdf = new BarChart(timeLineDomObj, 500, 250, 30)
+    asdf.generate(timeData)
 }
 
 //d3.csv('../../datasets/grove_sensors.csv').then(data => {
