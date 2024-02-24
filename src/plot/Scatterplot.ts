@@ -1,8 +1,8 @@
-//taken and adapted from https://observablehq.com/@d3/connected-scatterplot/2?intent=fork
+//adapted from https://observablehq.com/@d3/connected-scatterplot/2?intent=fork
 
 import * as d3 from "d3";
 import {Selection} from "d3";
-import {Plot} from "./plot.ts";
+import {Plot} from "./Plot.ts";
 
 /**
  * A class to generate a scatterplot
@@ -60,16 +60,16 @@ export class Scatterplot implements Plot {
         //removes children of svg obj
         this.svg.selectAll('g').remove()
 
-        const xAxis = d3.scaleLinear()
+        const xScale = d3.scaleLinear()
             .domain([data.length, 1])
             .range([this.margin, this.width - this.margin])
 
-        const yAxis = d3.scaleLinear()
+        const yScale = d3.scaleLinear()
             .domain(d3.extent(data) as number[])
             .range([this.height - this.margin, this.margin])
 
 
-        this.addAxis(this.svg, xAxis, yAxis)
+        this.addAxis(this.svg, xScale, yScale)
 
         if(this.connected) {
             //line
@@ -78,7 +78,7 @@ export class Scatterplot implements Plot {
                 .attr('fill', 'none')
                 .attr('stroke', 'black')
                 .attr('stroke-width', 1.5)
-                .attr('d', d3.line<number>().x((_, i) => xAxis(i + 1)).y(d => yAxis(d)))
+                .attr('d', d3.line<number>().x((_, i) => xScale(i + 1)).y(d => yScale(d)))
         }
 
         //dots
@@ -89,8 +89,8 @@ export class Scatterplot implements Plot {
             .selectAll('circle')
             .data(data)
             .join('circle')
-            .attr('cx', (_, i) => xAxis(i + 1))
-            .attr('cy', yAxis)
+            .attr('cx', (_, i) => xScale(i + 1))
+            .attr('cy', yScale)
             .attr('r', 3)
 
 
@@ -101,13 +101,13 @@ export class Scatterplot implements Plot {
      * Generates and appends axis for the scatterplot
      *
      * @param svg the svg to add the axis to
-     * @param xAxis the x-axis scale
-     * @param yAxis the y-axis scale
+     * @param xScale the x-axis scale
+     * @param yScale the y-axis scale
      */
-    addAxis(svg: Selection<SVGSVGElement, undefined, null, undefined>, xAxis: d3.ScaleLinear<number, number>, yAxis: d3.ScaleLinear<number, number>) {
+    addAxis(svg: Selection<SVGSVGElement, undefined, null, undefined>, xScale: d3.ScaleLinear<number, number>, yScale: d3.ScaleLinear<number, number>) {
         svg.append('g')
             .attr('transform', `translate(0, ${this.height - this.margin})`)
-            .call(d3.axisBottom(xAxis))
+            .call(d3.axisBottom(xScale))
             //create grid
             .call(g => g.select('.domain').remove())
             .call(g => g.selectAll('.tick line').clone()
@@ -124,7 +124,7 @@ export class Scatterplot implements Plot {
 
         svg.append('g')
             .attr('transform', `translate(${this.margin}, 0)`)
-            .call(d3.axisLeft(yAxis))
+            .call(d3.axisLeft(yScale))
             //create grid
             .call(g => g.select('.domain').remove())
             .call(g => g.selectAll('.tick line').clone()

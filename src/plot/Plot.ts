@@ -27,11 +27,11 @@ export interface Plot {
      *
      * @param data the initial data
      */
-    generate(data?: number[] | number[][]): void
+    generate(data?: any): void
 
     /**
      * Updates the data points in this plot
      * @param data the new datapoints
      */
-    update(data: number[] | number[][]) : void
+    update(data: any) : void
 }

@@ -1,6 +1,6 @@
-//taken and adaped from https://observablehq.com/@d3/brushable-scatterplot-matrix
+//adaped from https://observablehq.com/@d3/brushable-scatterplot-matrix
 
-import {Plot} from "./plot.ts";
+import {Plot} from "./Plot.ts";
 import * as d3 from "d3";
 import {Selection} from "d3";
 
