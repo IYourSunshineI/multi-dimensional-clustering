@@ -1,7 +1,9 @@
 import {Scatterplot} from "./plot/Scatterplot.ts";
-import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 import {BarChart} from "./plot/BarChart.ts";
 import {TimeDataGroup} from "./utils/TimeDataGroup.ts";
+import {CanvasScatterMatrix} from "./plot/CanvasScatterMatrix.ts";
+import {CsvParser} from "./utils/CsvParser.ts";
+import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 
 const data: number[] = [1, 4.2, 3, 4, 5, 5, 6, 6.2, 8, 9]
 
@@ -72,8 +74,22 @@ const scatterData: number[][] = [
     [15.69315366,3.740026226,16.31835825,0.884080975,0.061426287,-0.054271667,0.882413597],
     [18.03029033,2.643089671,29.84926395,1.495874739,0.14890336,-0.221918577,1.479321932]
 ]
-if(scatterMatrixDomObj) {
-    const scatterMatrix = new ScatterMatrix(scatterMatrixDomObj, 850, 850, 15, ['acce_max', 'acce_min', 'acce_std', 'stride_length', 'step_heading', 'rel_pos_x', 'rel_pos_y']);
-    scatterMatrix.generate(scatterData)
-}
 
+//var scatterMatrix;
+//if(scatterMatrixDomObj) {
+//    scatterMatrix = new CanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15, ['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+//    scatterMatrix.generate()
+//}
+
+const centrifugalPumpsAttributes = ['machine_id','value_ISO','value_DEMO','value_ACC','value_P2P','valueTEMP']
+const groveSensorsAttributes = ['Temperature','Humidity','Air Quality','Light','Loudness']
+const sensordataAttributes = ['acce_max','acce_min','acce_std','stride_length','step_heading','rel_pos_x','rel_pos_y']
+
+
+const csvReader = new CsvParser('sensordata.csv')
+await csvReader.parse(sensordataAttributes)
+
+if(scatterMatrixDomObj) {
+    const scatterMatrix = new CanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15, csvReader.attributes);
+    scatterMatrix.generate(csvReader.data)
+}

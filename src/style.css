@@ -59,3 +59,9 @@ body, html {
         align-items: center;
     }
 }
+
+.scatterMatrix {
+    > svg {
+        position: absolute;
+    }
+}
