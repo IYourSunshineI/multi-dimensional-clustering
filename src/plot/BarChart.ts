@@ -1,11 +1,19 @@
 //adapted from https://d3-graph-gallery.com/graph/barplot_stacked_basicWide.html
 
-import {Plot} from "./Plot.ts";
 import * as d3 from "d3";
 import {Selection} from "d3";
 import {TimeDataGroup} from "../utils/TimeDataGroup.ts";
 
-export class BarChart implements Plot {
+/**
+ * Class to generate a bar chart
+ *
+ * @param container the container to append the bar chart to
+ * @param svg the svg to display the bar chart
+ * @param width the width of the bar chart
+ * @param height the height of the bar chart
+ * @param margin the margin of the bar chart
+ */
+export class BarChart {
     container: HTMLElement;
     svg: Selection<SVGSVGElement, undefined, null, undefined> | null;
     width: number;
@@ -20,17 +28,13 @@ export class BarChart implements Plot {
         this.margin = margin
     }
 
-    generate(data?: TimeDataGroup[]): void {
-        this.svg = d3.create('svg')
-            .attr('width', this.width)
-            .attr('height', this.height)
-            .attr("viewBox", [0, 0, this.width, this.height])
-            .attr("style", "max-width: 100%; height: auto;")
-
-        if (data) {
-            this.update(data)
-            return
-        }
+    /**
+     * Generates the bar chart as empty plot
+     * uses arbitrary scales
+     */
+    generate(): void {
+        this.svg = this.generateSvg()
+        if(!this.svg) return
 
         const xScale = d3.scaleBand()
             .domain(['day1', 'day2', 'day3', 'day4', 'day5'])
@@ -45,8 +49,16 @@ export class BarChart implements Plot {
         this.container.append(this.svg.node()!)
     }
 
+    /**
+     * Updates the bar chart with new data
+     *
+     * @param data the new data to display
+     */
     update(data: TimeDataGroup[]): void {
-        if(!this.svg) return
+        if(!this.svg) {
+            this.svg = this.generateSvg()
+            if(!this.svg) return
+        }
 
         //removes children of svg obj
         this.svg.selectAll('g').remove()
@@ -93,7 +105,23 @@ export class BarChart implements Plot {
         this.container.append(this.svg.node()!)
     }
 
-
+    /**
+     * Generates a svg element to append to the container
+     *
+     * @returns the generated svg
+     */
+    generateSvg() {
+        const svg = d3.create('svg')
+            .attr('width', this.width)
+            .attr('height', this.height)
+            .attr("viewBox", [0, 0, this.width, this.height])
+            .attr("style", "max-width: 100%; height: auto;")
+        if(!svg) {
+            console.error('svg could not be created')
+            return null
+        }
+        return svg
+    }
 
     /**
      * Generates and appends axis for the scatterplot
