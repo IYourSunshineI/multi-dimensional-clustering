@@ -2,14 +2,18 @@
 
 import * as d3 from "d3";
 import {Selection} from "d3";
-import {Plot} from "./Plot.ts";
 
 /**
  * A class to generate a scatterplot
  *
+ * @param container the container to append the scatterplot to
+ * @param svg the svg to display the scatterplot
+ * @param width the width of the scatterplot
+ * @param height the height of the scatterplot
+ * @param margin the margin of the scatterplot
  * @param connected whether the scatterplot should be connected
  */
-export class Scatterplot implements Plot {
+export class Scatterplot {
     container: HTMLElement
     svg: Selection<SVGSVGElement, undefined, null, undefined> | null
     width: number
@@ -26,19 +30,13 @@ export class Scatterplot implements Plot {
         this.connected = connected
     }
 
-    generate(data?: number[]): void {
-        this.svg = d3.create('svg')
-            .attr('width', this.width)
-            .attr('height', this.height)
-            .attr("viewBox", [0, 0, this.width, this.height])
-            .attr("style", "max-width: 100%; height: auto;")
-
-
-        if (data) {
-            //if data is provided, add initial data to the plot
-            this.update(data)
-            return
-        }
+    /**
+     * Generates the scatterplot as empty plot
+     * uses arbitrary scales
+     */
+    generate(): void {
+        this.svg = this.generateSvg()
+        if(!this.svg) return
 
         //arbitrary axis
         const xAxis = d3.scaleLinear()
@@ -54,8 +52,16 @@ export class Scatterplot implements Plot {
         this.container.append(this.svg.node()!)
     }
 
+    /**
+     * Updates the scatterplot with new data
+     *
+     * @param data the data to update the scatterplot with
+     */
     update(data: number[]): void {
-        if (!this.svg) return
+        if(!this.svg) {
+            this.svg = this.generateSvg()
+            if(!this.svg) return
+        }
 
         //removes children of svg obj
         this.svg.selectAll('g').remove()
@@ -98,6 +104,25 @@ export class Scatterplot implements Plot {
     }
 
     /**
+     * Generates a svg element to append to the container
+     *
+     * @returns the svg object
+     */
+    generateSvg() {
+        const svg = d3.create('svg')
+            .attr('width', this.width)
+            .attr('height', this.height)
+            .attr("viewBox", [0, 0, this.width, this.height])
+            .attr("style", "max-width: 100%; height: auto;")
+
+        if(!svg) {
+            console.error('Could not create svg')
+            return null
+        }
+        return svg
+    }
+
+    /**
      * Generates and appends axis for the scatterplot
      *
      * @param svg the svg to add the axis to
@@ -137,5 +162,4 @@ export class Scatterplot implements Plot {
                 .attr('text-anchor', 'start')
                 .text('Inertia'))
     }
-
 }
