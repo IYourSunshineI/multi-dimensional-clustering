@@ -50,6 +50,6 @@ await csvReader.parse(centrifugalPumpsAttributes)
 const clusterIndices = kmeans(csvReader.data, 3, 100)
 
 if(scatterMatrixDomObj) {
-    const scatterMatrix = new CanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15, csvReader.attributes);
-    scatterMatrix.generate()
+    const scatterMatrix = new CanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
+    scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
 }
