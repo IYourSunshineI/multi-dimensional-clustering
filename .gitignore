@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 /test
-/datasets
+/public/datasets
 /public/logo.xcf
 
 # Editor directories and files
