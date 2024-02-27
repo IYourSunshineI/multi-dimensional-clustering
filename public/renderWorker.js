@@ -2,16 +2,28 @@ importScripts('https://cdn.jsdelivr.net/npm/d3@6.2.0/dist/d3.min.js');
 
 // Listen for messages from the main thread
 self.onmessage = function(event) {
-    const { chunk, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin } = event.data;
+    const { chunk, clusterIndices, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin } = event.data;
 
     // Perform rendering tasks
-    const imageData = renderDataPoints(chunk, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin);
+    const imageData = renderDataPoints(chunk, clusterIndices, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin);
 
     // Send back the rendered data
     self.postMessage({ imageData });
 };
 
-function renderDataPoints(chunk, dimensions, xDomain, yDomain, cellWidth, cellHeight, margin) {
+function renderDataPoints(chunk, clusterIndices, dimensions, xDomain, yDomain, cellWidth, cellHeight, margin) {
+    const colors = [
+        '#ff0000',
+        '#a1ff0a',
+        '#147df5',
+        '#ff8700',
+        '#0aff99',
+        '#deff0a',
+        '#0aefff',
+        '#be0aff',
+        '#580aff',
+        '#ffd300',
+    ]
     // Create an off-screen canvas for rendering
     const offscreenCanvas = new OffscreenCanvas(850, 850);
     const offscreenContext = offscreenCanvas.getContext('2d');
@@ -24,16 +36,16 @@ function renderDataPoints(chunk, dimensions, xDomain, yDomain, cellWidth, cellHe
 
 
     // Render data points on the off-screen canvas
-    chunk.forEach(d => {
+    chunk.forEach((d, index) => {
         for(let i = 0; i < dimensions[0]; i++) {
             for(let j = 0; j < dimensions[1]; j++) {
                 if (i >= j) continue;
                 offscreenContext.beginPath();
-                offscreenContext.arc(xScale[i](d[i]) + margin, yScale[j](d[j]), 3, 0, 2 * Math.PI);
-                offscreenContext.fillStyle = 'white';
+                offscreenContext.arc(xScale[i](d[i]) + margin, yScale[j](d[j]), 2.5, 0, 2 * Math.PI);
+                offscreenContext.fillStyle = colors[clusterIndices[index]]
                 offscreenContext.fill();
-                offscreenContext.strokeStyle = 'black';
-                offscreenContext.stroke();
+                //offscreenContext.strokeStyle = 'black';
+                //offscreenContext.stroke();
                 offscreenContext.closePath();
             }
         }

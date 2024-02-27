@@ -38,7 +38,7 @@ export class CanvasScatterMatrix {
 
     /**
      * Generates the scatter matrix as empty plot
-     * uses arbitrarily attributenames and scales for the cells
+     * uses arbitrariy attributenames and scales for the cells
      */
     generate(): void {
         this.svg = this.generateSvg()
@@ -95,7 +95,6 @@ export class CanvasScatterMatrix {
             this.canvas = canvasObj.canvas
             this.context = canvasObj.context
         }
-
 
         //removes children of svg obj
         this.svg.selectAll('g').remove()
@@ -183,7 +182,7 @@ export class CanvasScatterMatrix {
         const wMargin = this.margin
 
         console.time('time to Plot')
-        worker.postMessage({ chunk: data, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin })
+        worker.postMessage({ chunk: data, clusterIndices, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin })
         worker.onmessage = (event) => {
             const { imageData } = event.data
             this.context?.putImageData(imageData, 0, 0)
@@ -215,7 +214,6 @@ export class CanvasScatterMatrix {
             })
         })
         */
-
 
         //add attribute names
         this.addAttributeNames(this.svg, attributes, cellWidth, cellHeight)

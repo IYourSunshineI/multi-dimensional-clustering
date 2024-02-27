@@ -21,5 +21,13 @@ export class CsvParser {
                 }))
                 console.timeEnd('csvParse')
             });
+        //this.normalize()
+    }
+
+    normalize() {
+        //normalize using d3
+        const columns = this.attributes.map((_, i) => this.data.map(d => d[i]))
+        const minmax = columns.map(d => d3.extent(d))
+        this.data = this.data.map(d => d.map((val, i) => (val - minmax[i][0]) / (minmax[i][1] - minmax[i][0])))
     }
 }
