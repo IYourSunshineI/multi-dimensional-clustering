@@ -4,6 +4,7 @@ import {TimeDataGroup} from "./utils/TimeDataGroup.ts";
 import {CanvasScatterMatrix} from "./plot/CanvasScatterMatrix.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
 import {kmeans} from "./clustering/kMeans.ts";
+import {MCanvasScatterMatrix} from "./plot/MCanvasScatterMatrix.ts";
 
 const data: number[] = [1, 4.2, 3, 4, 5, 5, 6, 6.2, 8, 9]
 
@@ -53,6 +54,7 @@ await csvReader.parse(groveSensorsAttributes)
 const clusterIndices = kmeans(csvReader.data, 4, 100)
 
 if(scatterMatrixDomObj) {
-    const scatterMatrix = new CanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
-    scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
+    const scatterMatrix = new MCanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
+    scatterMatrix.generate()
+    //scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
 }
