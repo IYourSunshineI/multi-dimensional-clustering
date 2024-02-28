@@ -3,7 +3,7 @@ import {BarChart} from "./plot/BarChart.ts";
 import {TimeDataGroup} from "./utils/TimeDataGroup.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
 import {kmeans} from "./clustering/kMeans.ts";
-import {MCanvasScatterMatrix} from "./plot/MCanvasScatterMatrix.ts";
+import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 
 const data: number[] = [1, 4.2, 3, 4, 5, 5, 6, 6.2, 8, 9]
 
@@ -52,7 +52,7 @@ csvReader.parse(sensordataAttributes).then(() => {
     const clusterIndices = kmeans(csvReader.data, 4, 100)
 
     if(scatterMatrixDomObj) {
-        const scatterMatrix = new MCanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
+        const scatterMatrix = new ScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
         //scatterMatrix.generate()
         scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
     }
