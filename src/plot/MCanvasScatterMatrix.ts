@@ -100,6 +100,10 @@ export class MCanvasScatterMatrix {
         const cellWidth = (this.width - (attributes.length + 1) * this.margin) / attributes.length + this.margin
         const cellHeight = (this.height - (attributes.length + 1) * this.margin) / attributes.length + this.margin
 
+        if(this.canvas.length === 0 || this.context.length === 0) {
+            this.generateCanvas(attributes.length, cellWidth, cellHeight)
+        }
+
         //horizontal scale
         const xScale = attributes.map((_, i) => d3.scaleLinear()
             // @ts-ignore
@@ -116,108 +120,86 @@ export class MCanvasScatterMatrix {
         //cenerate cells
         this.addCells(this.svg, attributes, cellWidth, cellHeight)
 
-        /*
+
         //reference (original try)
-        add data points to cell
-        cells.each(function ([i, j]) {
-            if (i === j) return
-            d3.select(this.parentElement).selectAll('circle')
-                .data(data)
-                .join('circle')
-                .attr('cx', d => xScale[i](d[i]))
-                .attr('cy', d => yScale[j](d[j]))
-                .attr('r', 3)
-                .attr('fill', 'white')
-                .attr('stroke', 'blue')
-                .attr('stroke-width', 1.5)
-        })
-        */
+        //cells.each(function ([i, j]) {
+        //    if (i === j) return
+        //    d3.select(this.parentElement).selectAll('circle')
+        //        .data(data)
+        //        .join('circle')
+        //        .attr('cx', d => xScale[i](d[i]))
+        //        .attr('cy', d => yScale[j](d[j]))
+        //        .attr('r', 3)
+        //        .attr('fill', 'white')
+        //        .attr('stroke', 'blue')
+        //        .attr('stroke-width', 1.5)
+        //})
 
-        this.context.clearRect(0, 0, this.width, this.height)
 
-        /*
+        const prepedData = this.prepareData(data, attributes, clusterIndices)
+
         // multiple webworkers
-        const chunkSize = 100
-        const chunks: number[][][] = [];
-        for(let i = 0; i < data.length; i += chunkSize) {
-            chunks.push(data.slice(i, i + chunkSize))
-        }
-        const dimensions = [this.attributes.length, this.attributes.length]
-        const xDomains = xScale.map(x => x.domain())
-        const yDomains = yScale.map(y => y.domain())
         const wMargin = this.margin
 
         const chunkPromises: Promise<any>[] = [];
         console.time('time to Plot')
-        chunks.forEach(chunk => {
-            const worker = new Worker('../renderWorker.js')
+        prepedData.forEach((domainData, i) => {
+            this.context[i]?.clearRect(0, 0, this.width, this.height)
+            const worker = new Worker('../mRenderWorker.js')
 
-            const promise = new Promise((resolve, reject) => {
+            const promise = new Promise((resolve, _) => {
                 worker.onmessage = (event) => {
                     const { imageData } = event.data
                     resolve(imageData)
+                    worker.terminate()
                 }
             })
-            worker.postMessage({ chunk, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin })
+            const xDomain = xScale[domainData[3][0]].domain()
+            const yDomain = yScale[domainData[3][1]].domain()
+            worker.postMessage({ data: domainData, xDomain, yDomain, cellWidth, cellHeight, margin: wMargin })
             chunkPromises.push(promise)
         })
 
         Promise.all(chunkPromises).then((imageDatas) => {
-            imageDatas.forEach(imageData => {
-                createImageBitmap(imageData).then((imageBitmap) => {
-                    this.context?.drawImage(imageBitmap, 0, 0)
-                })
+            imageDatas.forEach((imageData, i) => {
+                this.context[i]?.putImageData(imageData, 0, 0)
             })
             console.timeEnd('time to Plot')
         })
-        */
-
-        // single webworker
-        const worker = new Worker('../renderWorker.js')
-        const dimensions = [attributes.length, attributes.length]
-        const xDomains = xScale.map(x => x.domain())
-        const yDomains = yScale.map(y => y.domain())
-        const wMargin = this.margin
-
-        console.time('time to Plot')
-        worker.postMessage({ chunk: data, clusterIndices, dimensions, xDomains, yDomains, cellWidth, cellHeight, wMargin })
-        worker.onmessage = (event) => {
-            const { imageData } = event.data
-            this.context?.putImageData(imageData, 0, 0)
-            worker.terminate()
-            console.timeEnd('time to Plot')
-        }
-
-        /*
-        //async
-        const chunkSize = 100
-        const chunkPromises = []
-        for(let i = 0; i < data.length; i += chunkSize) {
-            chunkPromises.push(this.renderDataPoints(data.slice(i, i + chunkSize), cells, xScale, yScale, cellWidth, cellHeight))
-        }
-        await Promise.all(chunkPromises)
-
-        naive
-        cells.each(([i, j]) => {
-            if (i === j) return
-            data.forEach(d => {
-                if(!this.context) return
-                this.context.beginPath()
-                this.context.arc(xScale[i](d[i]) + cellWidth * i + this.margin, yScale[j](d[j]) + cellHeight * j, 1.5, 0, 2 * Math.PI)
-                this.context.fillStyle = 'white'
-                this.context.fill()
-                this.context.strokeStyle = 'black'
-                this.context.stroke()
-                this.context.closePath()
-            })
-        })
-        */
 
         //add attribute names
         this.addAttributeNames(this.svg, attributes, cellWidth, cellHeight)
 
         this.container.append(this.svg.node()!)
-        this.container.append(this.canvas.node()!)
+        const canvasContainer = document.createElement('div')
+        canvasContainer.style.width = `${this.width}px`
+        canvasContainer.style.height = `${this.height}px`
+        this.container.append(canvasContainer!)
+        this.canvas.forEach(c => {
+            if(c && canvasContainer) canvasContainer.append(c)
+        })
+    }
+
+    prepareData(data: number[][], attributes: string[], clusterIndices: number[]): number[][][] {
+        console.time('prepData')
+        const columns = attributes.map((_, i) => data.map(row => row[i]))
+        const prepedData: number[][][] = Array.from({length: (columns.length * (columns.length - 1) / 2)}, () => [])
+        let index = 0
+        for(let att1 = 0; att1 < columns.length; att1++) {
+            for(let att2 = 0; att2 < columns.length; att2++) {
+                if(att1 >= att2) continue
+                const x = columns[att1]
+                const y = columns[att2]
+                prepedData[index].push(x)
+                prepedData[index].push(y)
+                prepedData[index].push(clusterIndices)
+                prepedData[index].push([att1, att2])
+                index++
+            }
+        }
+        console.timeEnd('prepData')
+
+        return prepedData
     }
 
     /**

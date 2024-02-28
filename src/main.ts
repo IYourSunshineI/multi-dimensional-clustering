@@ -1,7 +1,6 @@
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {BarChart} from "./plot/BarChart.ts";
 import {TimeDataGroup} from "./utils/TimeDataGroup.ts";
-import {CanvasScatterMatrix} from "./plot/CanvasScatterMatrix.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
 import {kmeans} from "./clustering/kMeans.ts";
 import {MCanvasScatterMatrix} from "./plot/MCanvasScatterMatrix.ts";
@@ -48,13 +47,13 @@ const sensordataAttributes = ['acce_max','acce_min','acce_std','stride_length','
 const sensordata = 'sensordata.csv'
 
 
-const csvReader = new CsvParser(groveSensors)
-await csvReader.parse(groveSensorsAttributes)
+const csvReader = new CsvParser(sensordata)
+csvReader.parse(sensordataAttributes).then(() => {
+    const clusterIndices = kmeans(csvReader.data, 4, 100)
 
-const clusterIndices = kmeans(csvReader.data, 4, 100)
-
-if(scatterMatrixDomObj) {
-    const scatterMatrix = new MCanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
-    scatterMatrix.generate()
-    //scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
-}
+    if(scatterMatrixDomObj) {
+        const scatterMatrix = new MCanvasScatterMatrix(scatterMatrixDomObj, 850, 850, 15);
+        //scatterMatrix.generate()
+        scatterMatrix.update(csvReader.data, csvReader.attributes, clusterIndices)
+    }
+})
