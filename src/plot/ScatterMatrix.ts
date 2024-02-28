@@ -6,18 +6,18 @@ import {Selection} from "d3";
 /**
  * A class to generate a scatter matrix
  * It uses a svg to display the axis and the different cells
- * and a canvas to display the data points which results in better performance
+ * and multiple canvases to display the data points which results in better performance
  * since there are no millions of objects in the dom
  *
  * @param container the container to append the scatter matrix to
  * @param svg the svg to display the axis and the different cells
- * @param canvas the canvas to display the data points
- * @param context the context of the canvas
+ * @param canvas the canvases to display the data points (one for each cell)
+ * @param context the contexts of the canvases
  * @param width the width of the scatter matrix
  * @param height the height of the scatter matrix
  * @param margin the margin between the cells
  */
-export class MCanvasScatterMatrix {
+export class ScatterMatrix {
     container: HTMLElement;
     svg: Selection<SVGSVGElement, undefined, null, undefined> | null;
     canvas: (HTMLCanvasElement | null)[]
@@ -72,13 +72,6 @@ export class MCanvasScatterMatrix {
 
 
         this.container.append(this.svg.node()!)
-        const canvasContainer = document.createElement('div')
-        canvasContainer.style.width = `${this.width}px`
-        canvasContainer.style.height = `${this.height}px`
-        this.container.append(canvasContainer!)
-        this.canvas.forEach(c => {
-            if(c && canvasContainer) canvasContainer.append(c)
-        })
     }
 
     /**
@@ -89,6 +82,9 @@ export class MCanvasScatterMatrix {
      * @param clusterIndices the cluster indices of each data point
      */
     async update(data: number[][], attributes: string[], clusterIndices: number[]): Promise<void> {
+        //we call this at first so the svg is generated while the data is beeing prepared
+        const prepedData = this.prepareData(data, attributes, clusterIndices)
+
         if(!this.svg) {
             this.svg = this.generateSvg()
             if(!this.svg) return
@@ -120,50 +116,51 @@ export class MCanvasScatterMatrix {
         //cenerate cells
         this.addCells(this.svg, attributes, cellWidth, cellHeight)
 
-
+        /*
         //reference (original try)
-        //cells.each(function ([i, j]) {
-        //    if (i === j) return
-        //    d3.select(this.parentElement).selectAll('circle')
-        //        .data(data)
-        //        .join('circle')
-        //        .attr('cx', d => xScale[i](d[i]))
-        //        .attr('cy', d => yScale[j](d[j]))
-        //        .attr('r', 3)
-        //        .attr('fill', 'white')
-        //        .attr('stroke', 'blue')
-        //        .attr('stroke-width', 1.5)
-        //})
-
-
-        const prepedData = this.prepareData(data, attributes, clusterIndices)
+        cells.each(function ([i, j]) {
+            if (i === j) return
+            d3.select(this.parentElement).selectAll('circle')
+                .data(data)
+                .join('circle')
+                .attr('cx', d => xScale[i](d[i]))
+                .attr('cy', d => yScale[j](d[j]))
+                .attr('r', 1)
+                .attr('fill', 'white')
+                .attr('stroke', 'blue')
+                .attr('stroke-width', 1.5)
+        })
+        */
 
         // multiple webworkers
-        const wMargin = this.margin
-
         const chunkPromises: Promise<any>[] = [];
-        console.time('time to Plot')
-        prepedData.forEach((domainData, i) => {
-            this.context[i]?.clearRect(0, 0, this.width, this.height)
-            const worker = new Worker('../mRenderWorker.js')
 
-            const promise = new Promise((resolve, _) => {
-                worker.onmessage = (event) => {
-                    const { imageData } = event.data
-                    resolve(imageData)
-                    worker.terminate()
-                }
+        console.time('time to Plot')
+        //await could be removed but for the timer to show the correct time it is needed
+        await prepedData.then(data => {
+            data.forEach((domainData, i) => {
+                this.context[i]?.clearRect(0, 0, this.width, this.height)
+                const worker = new Worker('../renderWorker.js')
+
+                const promise = new Promise((resolve, _) => {
+                    worker.onmessage = (event) => {
+                        //when the worker is done put image data on corresponding canvas
+                        const { imageData } = event.data
+                        this.context[i]?.putImageData(imageData, 0, 0)
+                        resolve('ok')
+                        worker.terminate()
+                    }
+                })
+
+                const xDomain = xScale[domainData[3][0]].domain()
+                const yDomain = yScale[domainData[3][1]].domain()
+                worker.postMessage({ data: domainData, xDomain, yDomain, cellWidth, cellHeight, margin: this.margin })
+                chunkPromises.push(promise)
             })
-            const xDomain = xScale[domainData[3][0]].domain()
-            const yDomain = yScale[domainData[3][1]].domain()
-            worker.postMessage({ data: domainData, xDomain, yDomain, cellWidth, cellHeight, margin: wMargin })
-            chunkPromises.push(promise)
         })
 
-        Promise.all(chunkPromises).then((imageDatas) => {
-            imageDatas.forEach((imageData, i) => {
-                this.context[i]?.putImageData(imageData, 0, 0)
-            })
+        //wait for all workers to finish, then take time
+        Promise.all(chunkPromises).then(() => {
             console.timeEnd('time to Plot')
         })
 
@@ -171,35 +168,42 @@ export class MCanvasScatterMatrix {
         this.addAttributeNames(this.svg, attributes, cellWidth, cellHeight)
 
         this.container.append(this.svg.node()!)
-        const canvasContainer = document.createElement('div')
-        canvasContainer.style.width = `${this.width}px`
-        canvasContainer.style.height = `${this.height}px`
-        this.container.append(canvasContainer!)
-        this.canvas.forEach(c => {
-            if(c && canvasContainer) canvasContainer.append(c)
-        })
     }
 
-    prepareData(data: number[][], attributes: string[], clusterIndices: number[]): number[][][] {
-        console.time('prepData')
-        const columns = attributes.map((_, i) => data.map(row => row[i]))
-        const prepedData: number[][][] = Array.from({length: (columns.length * (columns.length - 1) / 2)}, () => [])
-        let index = 0
-        for(let att1 = 0; att1 < columns.length; att1++) {
-            for(let att2 = 0; att2 < columns.length; att2++) {
-                if(att1 >= att2) continue
-                const x = columns[att1]
-                const y = columns[att2]
-                prepedData[index].push(x)
-                prepedData[index].push(y)
-                prepedData[index].push(clusterIndices)
-                prepedData[index].push([att1, att2])
-                index++
+    /**
+     * Prepares the data to be sent to the webworkers
+     *
+     * This function maps the 2-dimensional data array to a 3-dimensional data array.
+     * The original 2-dimensional array is essentially the same as the raw csv file
+     * The 3-dimensional array is a collection of 2-dimensional arrays, each containing a combination of two of the initial attributes.
+     * The third dimension is used to determine which cell the combination corresponds to.
+     *
+     * @param data the data to be prepared
+     * @param attributes the attributes of the data set
+     * @param clusterIndices the cluster indices of each data point
+     */
+    async prepareData(data: number[][], attributes: string[], clusterIndices: number[]): Promise<number[][][]> {
+        return new Promise<number[][][]>((resolve, _) => {
+            console.time('prepData')
+            const columns = attributes.map((_, i) => data.map(row => row[i]))
+            const prepedData: number[][][] = Array.from({length: (columns.length * (columns.length - 1) / 2)}, () => [])
+            let index = 0
+            for(let att1 = 0; att1 < columns.length; att1++) {
+                for(let att2 = 0; att2 < columns.length; att2++) {
+                    if(att1 >= att2) continue
+                    const x = columns[att1]
+                    const y = columns[att2]
+                    prepedData[index].push(x)
+                    prepedData[index].push(y)
+                    prepedData[index].push(clusterIndices)
+                    prepedData[index].push([att1, att2])
+                    index++
+                }
             }
-        }
-        console.timeEnd('prepData')
+            console.timeEnd('prepData')
 
-        return prepedData
+            resolve(prepedData)
+        })
     }
 
     /**
@@ -223,11 +227,20 @@ export class MCanvasScatterMatrix {
     }
 
     /**
-     * Generates a canvas element to append to the container
+     * Creates a canvas container and appends one canvas for each cell to it.
+     * The canvases and the corresponding contexts are stored in the corresponding arrays
      *
-     * @returns the generated canvas and context
+     * @param dimensions the number of dimensions of the data set
+     * @param cellWidth the width of the cells
+     * @param cellHeight the height of the cells
      */
-    generateCanvas(dimensions: number, cellWidth: number, cellHeight: number) {
+    generateCanvas(dimensions: number, cellWidth: number, cellHeight: number): void {
+        const canvasContainer = document.createElement('div')
+        canvasContainer.id = 'canvasContainer'
+        canvasContainer.style.width = `${this.width}px`
+        canvasContainer.style.height = `${this.height}px`
+        this.container.append(canvasContainer!)
+
         for(let x = 0; x < dimensions; x++) {
             for(let y = 0; y < dimensions; y++) {
                 if(x >= y) continue
@@ -240,39 +253,20 @@ export class MCanvasScatterMatrix {
 
                 if(!canvas) {
                     console.error('canvas could not be created')
-                    return null
                 }
 
                 const context = canvas.getContext('2d')
 
                 if(!context) {
                     console.error('context could not be fetched')
-                    return null
                 }
 
+                canvasContainer.append(canvas)
                 this.canvas.push(canvas)
                 this.context.push(context)
             }
         }
     }
-
-    /*
-    async renderDataPoints(dataChunk: number[][], cells: any, xScale: any[], yScale: any[], cellWidth: number, cellHeight: number): Promise<void> {
-        cells.each(([i, j]) => {
-            if (i === j) return;
-            dataChunk.forEach(d => {
-                if(!this.context) return
-                this.context.beginPath();
-                this.context.arc(xScale[i](d[i]) + cellWidth * i + this.margin, yScale[j](d[j]) + cellHeight * j, 3, 0, 2 * Math.PI);
-                this.context.fillStyle = 'white';
-                this.context.fill();
-                this.context.strokeStyle = 'black';
-                this.context.stroke();
-                this.context.closePath();
-            });
-        });
-    }
-    */
 
     /**
      * Generates and appends Axis to the cells
