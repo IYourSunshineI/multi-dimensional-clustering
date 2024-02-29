@@ -11,6 +11,7 @@ import {Selection} from "d3";
  *
  * @param container the container to append the scatter matrix to
  * @param svg the svg to display the axis and the different cells
+ * @param canvasContainer the container to append the canvases to
  * @param canvas the canvases to display the data points (one for each cell)
  * @param context the contexts of the canvases
  * @param width the width of the scatter matrix
@@ -20,6 +21,7 @@ import {Selection} from "d3";
 export class ScatterMatrix {
     container: HTMLElement;
     svg: Selection<SVGSVGElement, undefined, null, undefined> | null;
+    canvasContainer: HTMLElement | null;
     canvas: (HTMLCanvasElement | null)[]
     context: (CanvasRenderingContext2D | null | undefined)[]
     width: number;
@@ -28,6 +30,7 @@ export class ScatterMatrix {
 
     constructor(container: HTMLElement, width: number, height: number, margin: number) {
         this.container = container
+        this.canvasContainer = null
         this.width = width
         this.height = height
         this.margin = margin
@@ -85,10 +88,9 @@ export class ScatterMatrix {
         //we call this at first so the svg is generated while the data is beeing prepared
         const prepedData = this.prepareData(data, attributes, clusterIndices)
 
-        if(!this.svg) {
-            this.svg = this.generateSvg()
-            if(!this.svg) return
-        }
+        this.svg?.remove()
+        this.svg = this.generateSvg()
+        if(!this.svg) return
 
         //removes children of svg obj
         this.svg.selectAll('g').remove()
@@ -96,9 +98,12 @@ export class ScatterMatrix {
         const cellWidth = (this.width - (attributes.length + 1) * this.margin) / attributes.length + this.margin
         const cellHeight = (this.height - (attributes.length + 1) * this.margin) / attributes.length + this.margin
 
-        if(this.canvas.length === 0 || this.context.length === 0) {
-            this.generateCanvas(attributes.length, cellWidth, cellHeight)
-        }
+        //delete old stuff if there is any
+        this.canvasContainer?.remove()
+        this.canvas.forEach(c => c?.remove())
+        console.log(this.canvas.length)
+        this.context = []
+        this.generateCanvas(attributes.length, cellWidth, cellHeight)
 
         //horizontal scale
         const xScale = attributes.map((_, i) => d3.scaleLinear()
@@ -266,6 +271,7 @@ export class ScatterMatrix {
                 this.context.push(context)
             }
         }
+        this.canvasContainer = canvasContainer
     }
 
     /**
