@@ -1,3 +1,5 @@
+//obsolete
+
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {BarChart} from "./plot/BarChart.ts";
 import {TimeDataGroup} from "./utils/TimeDataGroup.ts";

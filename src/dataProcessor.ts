@@ -20,7 +20,7 @@ let elbow: Scatterplot
 let timeline: BarChart
 let scattermatrix: ScatterMatrix
 
-let attributeSelection: Map<{ index: number, name: string }, boolean>
+let attributeSelection: Map<number, boolean>
 let csvParser: CsvParser
 
 
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param filename The name of the file to be loaded
  */
 export async function attributeSelector(filename: string): Promise<void> {
-    attributeSelection = new Map<{ index: number, name:string }, boolean>()
+    attributeSelection = new Map<number, boolean>()
     //parse data
     csvParser = new CsvParser(filename + '.csv')
     csvParser.parse().then(() => {
@@ -78,7 +78,8 @@ export function verify() {
     //clustering
     const clusterIndices = kmeans(prepedData, 4, 100)
     //presentation scattermatrix
-    const attributeNames = Array.from(attributeSelection.keys()).map(d => d.name)
+    const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
+        .filter(attr => attr !== null) as string[]
     scattermatrix.update(prepedData, attributeNames, clusterIndices)
     //timeline
     //TODO: implement timeline
@@ -95,7 +96,7 @@ function prepareData(): any[][] {
     let indices: number[] = []
     attributeSelection.forEach((value, key) => {
         if(value) {
-            indices.push(key.index)
+            indices.push(key)
         } else {
             attributeSelection.delete(key)
         }
@@ -127,7 +128,7 @@ function createCheckbox(attribute: string, index:number, forClustering: boolean)
     if(forClustering) {
         input.id = 'att_' + index
         input.name = 'att_' + attribute
-        attributeSelection.set({ index: index, name: attribute }, false)
+        attributeSelection.set(index, false)
         input.addEventListener('change', (event) => callback(event.target as HTMLInputElement))
     } else {
         input.id = 'time_' + attribute
@@ -147,5 +148,7 @@ function createCheckbox(attribute: string, index:number, forClustering: boolean)
  * @param checkbox the checkbox that was clicked
  */
 function callback(checkbox: HTMLInputElement) {
-    attributeSelection.set({index: checkbox.id.slice(4) as unknown as number, name: checkbox.name.slice(4)}, checkbox.checked)
+    const index = parseInt(checkbox.id.slice(4), 10)
+    attributeSelection.set(index, checkbox.checked)
+    console.log(attributeSelection)
 }
