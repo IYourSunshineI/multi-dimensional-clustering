@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="stylesheet" href="./src/style.css">
       <link rel="stylesheet" href="./src/colors.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <title>Multidimensional Clustering</title>
   </head>
   <body>
@@ -12,6 +13,20 @@
         <div class="left">
             <div class="header">
                 <img src="./public/logo.png" alt="logo" class="logo">
+                <div class="control-elements">
+                    <div class="button-group">
+                        <button id="uploadFile"><span class="material-symbols-outlined">upload_file</span></button>
+                        <button id="startButton"><span class="material-symbols-outlined">start</span></button>
+                    </div>
+                    <div class="dropdown-container">
+                        <label for="filesSelect">Data</label>
+                        <select id="filesSelect" name="filesSelect">
+                            <option value="centrifugal_pumps">centrifugal_pumps</option>
+                            <option value="grove_sensors">grove_sensors</option>
+                            <option value="sensordata">sensordata</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="content">
@@ -29,6 +44,7 @@
             <div class="scatterMatrix" id="scatterMatrix"></div>
         </div>
     </div>
-    <script type="module" src="./src/main.ts"></script>
+    <!--<script type="module" src="./src/main.ts"></script>-->
+    <script type="module" src="./src/userInputManager.ts"></script>
   </body>
 </html>

@@ -68,3 +68,54 @@ body, html {
         position: absolute;
     }
 }
+
+.control-elements {
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.button-group {
+    align-self: end;
+    display: flex;
+    flex-direction: row;
+}
+
+button {
+    color: var(--dark-default);
+    width: fit-content;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+button:hover {
+    background: var(--container-dark);
+}
+
+.dropdown-container {
+    border-radius: 10px;
+    background-color: var(--container-dark);
+    padding: 5px 10px;
+}
+
+select {
+    font-size: 16px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: var(--container-light);
+    color: var(--dark-default);
+    padding: 5px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+select:hover {
+    border: 2px solid var(--container-dark);
+}
