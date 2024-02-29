@@ -101,7 +101,6 @@ export class ScatterMatrix {
         //delete old stuff if there is any
         this.canvasContainer?.remove()
         this.canvas.forEach(c => c?.remove())
-        console.log(this.canvas.length)
         this.context = []
         this.generateCanvas(attributes.length, cellWidth, cellHeight)
 
@@ -189,7 +188,7 @@ export class ScatterMatrix {
      */
     async prepareData(data: number[][], attributes: string[], clusterIndices: number[]): Promise<number[][][]> {
         return new Promise<number[][][]>((resolve, _) => {
-            console.time('prepData')
+            console.time('prepare chunks')
             const columns = attributes.map((_, i) => data.map(row => row[i]))
             const prepedData: number[][][] = Array.from({length: (columns.length * (columns.length - 1) / 2)}, () => [])
             let index = 0
@@ -205,7 +204,7 @@ export class ScatterMatrix {
                     index++
                 }
             }
-            console.timeEnd('prepData')
+            console.timeEnd('prepare chunks')
 
             resolve(prepedData)
         })

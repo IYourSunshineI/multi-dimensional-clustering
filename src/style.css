@@ -80,6 +80,7 @@ body, html {
     align-self: end;
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
 }
 
 button {
@@ -118,4 +119,42 @@ select {
 
 select:hover {
     border: 2px solid var(--container-dark);
+}
+
+.attributeSelector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: fit-content;
+    height: fit-content;
+    background: var(--background);
+    border: 10px solid var(--container-dark);
+    border-radius: 20px;
+    z-index: 10;
+    padding: 10px;
+
+    .attributeSelectorContent {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+
+        > span {
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+
+        .attributes {
+            align-self: center;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .button-group{
+            align-self: normal;
+        }
+    }
 }

@@ -1,4 +1,13 @@
 import * as d3 from 'd3';
+
+/**
+ * This class is used to parse the provided csv files.
+ *
+ * @param datasetsPath The path to the datasets folder
+ * @param fileName The name of the file to be parsed
+ * @param attributes The attributes of the dataset
+ * @param data The data of the dataset
+ */
 export class CsvParser {
     datasetsPath: string = '../../datasets/';
     fileName: string;
@@ -9,12 +18,15 @@ export class CsvParser {
         this.fileName = filePath;
     }
 
-    async parse(attributes: string[]) {
+    /**
+     * This function is used to parse the csv file and normalize the data.
+     */
+    async parse() {
         console.time('csvParse')
         await d3.csv(this.datasetsPath + this.fileName)
             .then(data => {
-                this.attributes = attributes
-                this.data = data.map(d => attributes.map(attr => {
+                this.attributes = data.columns
+                this.data = data.map(d => this.attributes.map(attr => {
                     const parsed = parseFloat(d[attr])
                     if(isNaN(parsed)) return d[attr]
                     else return parsed
@@ -24,6 +36,10 @@ export class CsvParser {
         this.normalize()
     }
 
+    /**
+     * This function normalizes the data, so the clustering process can
+     * produce resonable results.
+     */
     normalize() {
         //normalize using d3
         const columns = this.attributes.map((_, i) => this.data.map(d => d[i]))
