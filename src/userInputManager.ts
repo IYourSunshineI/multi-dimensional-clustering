@@ -1,4 +1,4 @@
-import {attributeSelector, cancel, verify} from "./dataProcessor.ts";
+import {attributeSelector, cancelClustering, verifyClustering} from "./main.ts";
 
 const fileSelector = document.getElementById('filesSelect') as HTMLSelectElement
 const startButton = document.getElementById('startButton') as HTMLButtonElement
@@ -20,9 +20,9 @@ startButton.addEventListener('click', () => {
 })
 
 attributeSelectionCancelButton.addEventListener('click', () => {
-    cancel()
+    cancelClustering()
 })
 
 attributeSelectionVerifyButton.addEventListener('click', () => {
-    verify()
+    verifyClustering()
 })
