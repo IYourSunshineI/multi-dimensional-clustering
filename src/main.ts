@@ -7,6 +7,7 @@ import {BarChart} from "./plot/BarChart.ts";
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
+import {ClusterResult} from "./utils/ClusterResult.ts";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -70,20 +71,34 @@ export function cancelClustering() {
  */
 export async function verifyClustering() {
     hideAttributeSelector()
+
     //data prep
     const prepedData = prepareData()
-    //clustering
-    console.time('kmeans')
-    const promises = dispatchClusterWorkers(prepedData, 100)
-    //elbow
-    //TODO: implement elbow method
-    //presentation scattermatrix
+
+    //prepare attributes
     const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
         .filter(attr => attr !== null) as string[]
 
-    Promise.all(promises).then((result) => {
+    //clustering
+    console.time('kmeans')
+    const promises: Promise<ClusterResult>[] = dispatchClusterWorkers(prepedData, 100)
+
+    //presentation
+    Promise.all(promises).then((results) => {
         console.timeEnd('kmeans')
-        scattermatrix.update(prepedData, attributeNames, result[3][1])
+
+        //scattermatrix
+        scattermatrix.update(prepedData, attributeNames, results[3].clusterIndices[1])
+
+        //elbow
+        const elbowData = Array.from({length: 10}).fill(0) as number[]
+        results.forEach(result => {
+            console.log(result.k, result.wcss)
+            elbowData[result.k[0]] = result.wcss[0]
+            elbowData[result.k[1]] = result.wcss[1]
+        })
+        elbow.update(elbowData.slice(1))
+
     }).catch((error) => {
         console.error(error)
     })
@@ -100,15 +115,15 @@ export async function verifyClustering() {
  * @param maxIterations the maximum number of iterations for the kmeans algorithm
  * @returns an two-dimensional array of the cluster indices for the different k values
  */
-function dispatchClusterWorkers(data: any[][], maxIterations: number): Promise<any>[] {
+function dispatchClusterWorkers(data: any[][], maxIterations: number): Promise<ClusterResult>[] {
     const clusterPromises = []
     for(let i = 1; i <= 10; i += 2) {
-        const promise = new Promise((resolve, reject) => {
+        const promise: Promise<ClusterResult> = new Promise((resolve, reject) => {
             const worker = new Worker('public/clusterWorker.js', {type: 'module'})
             worker.postMessage({data: data, k: i, maxIterations: maxIterations})
             worker.onmessage = (event) => {
-                const {clusterIndices} = event.data
-                resolve(clusterIndices)
+                const { clusterIndices, wcss, k } = event.data
+                resolve({clusterIndices: clusterIndices, wcss: wcss, k: k})
                 worker.terminate()
             }
             worker.onerror = (event) => {
