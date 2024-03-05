@@ -73,58 +73,38 @@ export async function verifyClustering() {
     //data prep
     const prepedData = prepareData()
     //clustering
-    //console.time('kmeans2')
-    //const asdf: Promise<number[]>[] = []
-    //for(let i = 1; i <= 10; i++) {
-    //    asdf.push(cluster(prepedData, i, 100))
-    //}
-    //Promise.all(asdf).then((results) => {
-    //    //console.log(results)
-    //    console.timeEnd('kmeans2')
-    //})
-
-    //console.time('kmeans1')
-    //const promise = dispatchClusterWorkers(prepedData, 4, 100)
-    //Promise.all(promise).then((results) => {
-    //    console.timeEnd('kmeans1')
-    //})
-
-    //console.time('kmeans3')
-    //const worker = new Worker('/public/clusterWorker.js')
-    //worker.postMessage({data: prepedData, k: 4, maxIterations: 100})
-    //worker.onmessage = (event) => {
-    //    const {clusterIndices} = event.data
-    //    console.timeEnd('kmeans3')
-    //    worker.terminate()
-    //}
-
-    console.time('kmeans4')
-    const promise = dispatchClusterWorkers(prepedData, 4, 100)
-    Promise.all(promise).then((_) => {
-        console.timeEnd('kmeans4')
-    }).catch((error) => {
-        console.log(error)
-    })
-
+    console.time('kmeans')
+    const promises = dispatchClusterWorkers(prepedData, 100)
     //elbow
     //TODO: implement elbow method
     //presentation scattermatrix
-    //const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
-    //    .filter(attr => attr !== null) as string[]
-//
-    //Promise.all(asdf).then((result) => {
-    //    console.timeEnd('kmeans2')
-    //    scattermatrix.update(prepedData, attributeNames, result[3])
-    //})
+    const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
+        .filter(attr => attr !== null) as string[]
+
+    Promise.all(promises).then((result) => {
+        console.timeEnd('kmeans')
+        scattermatrix.update(prepedData, attributeNames, result[3][1])
+    }).catch((error) => {
+        console.error(error)
+    })
     //timeline
     //TODO: implement timeline
 }
 
-function dispatchClusterWorkers(data: any[][], _: number, maxIterations: number): Promise<any>[] {
+/**
+ * This function dispatches the clustering process to the cluster workers.
+ * Each worker is responsible for two differnt k values. (1, 10), (2, 9), (3, 8), (4, 7), (5, 6)
+ * With this setup the process was measured to be the fastest.
+ *
+ * @param data the data to be clustered
+ * @param maxIterations the maximum number of iterations for the kmeans algorithm
+ * @returns an two-dimensional array of the cluster indices for the different k values
+ */
+function dispatchClusterWorkers(data: any[][], maxIterations: number): Promise<any>[] {
     const clusterPromises = []
     for(let i = 1; i <= 10; i += 2) {
         const promise = new Promise((resolve, reject) => {
-            const worker = new Worker('public/mlClusterWorker.js', {type: 'module'})
+            const worker = new Worker('public/clusterWorker.js', {type: 'module'})
             worker.postMessage({data: data, k: i, maxIterations: maxIterations})
             worker.onmessage = (event) => {
                 const {clusterIndices} = event.data

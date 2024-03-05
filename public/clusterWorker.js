@@ -1,11 +1,15 @@
-import skmeans from 'skmeans';
+/**
+ * This is a web worker that will run the kmeans algorithm in a separate thread.
+ */
 
-self.onmessage = function(event) {
-    const { data, k, maxIterations } = event.data;
+import {kmeans} from 'ml-kmeans';
 
-    console.log(k, 11 - k)
-    const result = skmeans(data, k, 'kmpp', maxIterations).idxs
-    const asdf = skmeans(data, 11 - k, 'kmpp', maxIterations).idxs
+self.onmessage = function (event) {
+    const { data, k , maxIterations } = event.data;
 
-    self.postMessage({ clusterIndices: 'asdf' });
+    const results = [];
+    results.push(kmeans(data, k, { initialization: "kmeans++", maxIterations: maxIterations }).clusters);
+    results.push(kmeans(data, 11-k, { initialization: "kmeans++", maxIterations: maxIterations }).clusters);
+
+    self.postMessage({ clusterIndices: results });
 }
