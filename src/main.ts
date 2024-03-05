@@ -7,7 +7,6 @@ import {BarChart} from "./plot/BarChart.ts";
 import {Scatterplot} from "./plot/Scatterplot.ts";
 import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
-import {kmeans} from "./clustering/kMeans.ts";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -69,20 +68,76 @@ export function cancelClustering() {
  * This function is called when the user has selected the
  * attributes to cluster on and starts the clustering process.
  */
-export function verifyClustering() {
+export async function verifyClustering() {
     hideAttributeSelector()
     //data prep
     const prepedData = prepareData()
     //clustering
-    const clusterIndices = kmeans(prepedData, 4, 100)
+    //console.time('kmeans2')
+    //const asdf: Promise<number[]>[] = []
+    //for(let i = 1; i <= 10; i++) {
+    //    asdf.push(cluster(prepedData, i, 100))
+    //}
+    //Promise.all(asdf).then((results) => {
+    //    //console.log(results)
+    //    console.timeEnd('kmeans2')
+    //})
+
+    //console.time('kmeans1')
+    //const promise = dispatchClusterWorkers(prepedData, 4, 100)
+    //Promise.all(promise).then((results) => {
+    //    console.timeEnd('kmeans1')
+    //})
+
+    //console.time('kmeans3')
+    //const worker = new Worker('/public/clusterWorker.js')
+    //worker.postMessage({data: prepedData, k: 4, maxIterations: 100})
+    //worker.onmessage = (event) => {
+    //    const {clusterIndices} = event.data
+    //    console.timeEnd('kmeans3')
+    //    worker.terminate()
+    //}
+
+    console.time('kmeans4')
+    const promise = dispatchClusterWorkers(prepedData, 4, 100)
+    Promise.all(promise).then((_) => {
+        console.timeEnd('kmeans4')
+    }).catch((error) => {
+        console.log(error)
+    })
+
     //elbow
     //TODO: implement elbow method
     //presentation scattermatrix
-    const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
-        .filter(attr => attr !== null) as string[]
-    scattermatrix.update(prepedData, attributeNames, clusterIndices)
+    //const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
+    //    .filter(attr => attr !== null) as string[]
+//
+    //Promise.all(asdf).then((result) => {
+    //    console.timeEnd('kmeans2')
+    //    scattermatrix.update(prepedData, attributeNames, result[3])
+    //})
     //timeline
     //TODO: implement timeline
+}
+
+function dispatchClusterWorkers(data: any[][], _: number, maxIterations: number): Promise<any>[] {
+    const clusterPromises = []
+    for(let i = 1; i <= 10; i += 2) {
+        const promise = new Promise((resolve, reject) => {
+            const worker = new Worker('public/mlClusterWorker.js', {type: 'module'})
+            worker.postMessage({data: data, k: i, maxIterations: maxIterations})
+            worker.onmessage = (event) => {
+                const {clusterIndices} = event.data
+                resolve(clusterIndices)
+                worker.terminate()
+            }
+            worker.onerror = (event) => {
+                reject(event.message)
+            }
+        })
+        clusterPromises.push(promise)
+    }
+    return clusterPromises
 }
 
 /**

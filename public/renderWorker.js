@@ -31,7 +31,9 @@ function renderDataPoints(data, xDomain, yDomain, cellWidth, cellHeight, margin)
         '#33cccc',
         '#6666cc',
         '#ff66ff',
-        '#ffcc66'
+        '#ffcc66',
+        '#ff11ff',
+        '#11ff11'
     ]
     // Create an off-screen canvas for rendering
     const offscreenCanvas = new OffscreenCanvas(1080, 1080);
