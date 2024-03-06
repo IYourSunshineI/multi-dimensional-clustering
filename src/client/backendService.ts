@@ -3,23 +3,23 @@ import {ClusterResult} from "../utils/ClusterResult.ts";
 /**
  * This function calls the server to cluster the data.
  *
- * @param data The data to cluster
- * @param maxIterations The maximum number of iterations
- * @returns The result of the clustering
+ * @param filename The name of the file to cluster
+ * @param selectedAttributeIndices The indices of the attributes to cluster on
+ * @param maxIterations The maximum number of iterations for the k-means algorithm
  */
-export async function cluster(data: number[][], maxIterations: number): Promise<ClusterResult[]> {
-    let xhr = new XMLHttpRequest()
-    xhr.open('POST', '/cluster', true)
-    xhr.setRequestHeader('Content-Type', 'application/json')
-    const body = JSON.stringify({data, maxIterations})
-    console.time('ml-kmeans')
-    xhr.send(body)
+export async function cluster(filename: string, selectedAttributeIndices: number[], maxIterations: number): Promise<ClusterResult> {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', `/cluster?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&maxIterations=${maxIterations}`, true)
+    xhr.send()
 
-    return new Promise((resolve, _) => {
+    return new Promise((resolve, reject) => {
         xhr.onreadystatechange = function() {
             if(xhr.readyState == XMLHttpRequest.DONE) {
-                console.timeEnd('ml-kmeans')
-                resolve(JSON.parse(xhr.responseText))
+                if(xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText))
+                } else {
+                    reject(xhr.responseText)
+                }
             }
         }
     })
@@ -40,7 +40,6 @@ export async function getAttributes(filename: string) : Promise<string[]> {
         xhr.onreadystatechange = function() {
             if(xhr.readyState == XMLHttpRequest.DONE) {
                 if(xhr.status === 200) {
-                    console.log(JSON.parse(xhr.responseText))
                     resolve(JSON.parse(xhr.responseText))
                 } else {
                     reject(xhr.responseText)

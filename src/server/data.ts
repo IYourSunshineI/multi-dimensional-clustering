@@ -16,23 +16,28 @@ export async function getAttributes(filename: string) {
 }
 
 /**
- * This function is used to parse the csv file and normalize the data.
+ * This function is used to parse the csv file, only taking the attributes corresponding to the given {@link selectedAttributeIndices}
+ * into account and normalize the data.
  *
  * @param filename The name of the file to parse
- * @returns The normalized data
+ * @param selectedAttributeIndices The indices of the attributes to parse
+ * @returns The attributes and the normalized data
  */
-export async function parseData(filename: string) {
+export async function parseData(filename: string, selectedAttributeIndices: number[]) {
     const fileContent = fs.readFileSync('./public/datasets/' + filename + '.csv', 'utf-8')
     console.time('parseData')
     const data = d3.csvParse(fileContent)
-    const attributes = data.columns
+    const attributes = data.columns.map((_, i) => selectedAttributeIndices.includes(i) ? data.columns[i] : null)
+        .filter(attr => attr !== null) as string[]
+
     const parsedData = data.map(d => attributes.map(attr => {
         const parsed = parseFloat(d[attr])
         if(isNaN(parsed)) return d[attr]
         else return parsed
     }))
     console.timeEnd('parseData')
-    return normalizeData(attributes, parsedData)
+    const normalizedData = normalizeData(attributes, parsedData)
+    return {attributes, data: normalizedData}
 }
 
 /**

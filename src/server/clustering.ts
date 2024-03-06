@@ -1,65 +1,33 @@
-/**
- * This is a web worker that will run the kmeans algorithm in a separate thread.
- */
-
 import { kmeans } from 'ml-kmeans';
 import {ClusterResult} from "../utils/ClusterResult.ts";
 
-export async function syncCluster (data: number[][], maxIterations: number) {
-    return new Promise<ClusterResult[]>((resolve, _) => {
-        const results = [];
-        const ks = [];
+/**
+ * Cluster the given data using the k-means algorithm.
+ *
+ * @param data the data to cluster
+ * @param maxIterations the maximum number of iterations for the k-means algorithm
+ * @return {Promise<ClusterResult>} the result of the clustering
+ */
+export async function cluster (data: number[][], maxIterations: number): Promise<ClusterResult> {
+    return new Promise<ClusterResult>((resolve, _) => {
+        const clusterResult: ClusterResult = {
+            data: data,
+            attributeNames: [],
+            clusterIndices: [],
+            wcss: [],
+            k: []
+        }
 
         console.time('kmeans')
         for (let k = 1; k <= 10; k++) {
             const res = kmeans(data, k, {initialization: "random", maxIterations: maxIterations})
-            results.push(res)
-            ks.push(k)
+            clusterResult.clusterIndices.push(res.clusters)
+            clusterResult.wcss.push(calculateWCSS(data, res.clusters, res.centroids))
+            clusterResult.k.push(k)
         }
         console.timeEnd('kmeans')
 
-        console.time('wcss')
-        let wcss = results.map(value => calculateWCSS(data, value.clusters, value.centroids));
-        console.timeEnd('wcss')
-
-        const clusterResults: ClusterResult[] = [];
-        for(let i = 0; i < results.length; i++) {
-            clusterResults.push({
-                clusterIndices: results[i].clusters,
-                wcss: wcss[i],
-                k: ks[i]
-            })
-        }
-
-        resolve(clusterResults)
-    })
-}
-
-export async function asyncCluster (data: number[][], maxIterations: number) {
-    return new Promise<ClusterResult[]>((resolve, _) => {
-        const results = [];
-        //const ks = [];
-
-        console.time('kmeans')
-        for(let k = 1; k <= 10; k++) {
-            const promise = new Promise<ClusterResult>((resolve, _) => {
-                const res = kmeans(data, k, { initialization: "random", maxIterations: maxIterations})
-
-                const clusterRes: ClusterResult = {
-                    clusterIndices: res.clusters,
-                    wcss: calculateWCSS(data, res.clusters, res.centroids),
-                    k: k
-                }
-
-                resolve(clusterRes)
-            })
-            results.push(promise)
-        }
-
-        Promise.all(results).then(res => {
-            console.timeEnd('kmeans')
-            resolve(res)
-        })
+        resolve(clusterResult)
     })
 }
 
