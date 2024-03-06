@@ -3,9 +3,9 @@
  */
 
 import { kmeans } from 'ml-kmeans';
-import {ClusterResult} from "../client/utils/ClusterResult.js";
+import {ClusterResult} from "../utils/ClusterResult.ts";
 
-export async function syncCluster (data: number[][], k: number, maxIterations: number) {
+export async function syncCluster (data: number[][], maxIterations: number) {
     return new Promise<ClusterResult[]>((resolve, _) => {
         const results = [];
         const ks = [];
@@ -35,7 +35,7 @@ export async function syncCluster (data: number[][], k: number, maxIterations: n
     })
 }
 
-export async function asyncCluster (data: number[][], k: number, maxIterations: number) {
+export async function asyncCluster (data: number[][], maxIterations: number) {
     return new Promise<ClusterResult[]>((resolve, _) => {
         const results = [];
         //const ks = [];
@@ -71,7 +71,7 @@ export async function asyncCluster (data: number[][], k: number, maxIterations: 
  * @param centroids the centroids of the clusters
  * @return {number} the WCSS
  */
-function calculateWCSS(data: number[][], clusters: number[], centroids: number[][]) {
+function calculateWCSS(data: number[][], clusters: number[], centroids: number[][]): number {
     let wcss = 0;
     for (let i = 0; i < data.length; i++) {
         for (let j = 0; j < data[i].length; j++) {

@@ -3,13 +3,12 @@
  * It creates the initial empty graphs and handles the file selection, attribute selection, data preparation and clustering.
  */
 
-import {BarChart} from "./plot/BarChart.ts";
-import {Scatterplot} from "./plot/Scatterplot.ts";
-import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
-import {CsvParser} from "./utils/CsvParser.ts";
-import {kmeans} from "./clustering/kMeans.ts";
-import {cluster} from "./clustering/sklearnClustering";
-import {ClusterResult} from "./utils/ClusterResult.js";
+import {BarChart} from "../plots/BarChart.ts";
+import {Scatterplot} from "../plots/Scatterplot.ts";
+import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
+import {CsvParser} from "../utils/CsvParser.ts";
+import {cluster} from "./backendService.ts";
+import {ClusterResult} from "../utils/ClusterResult.ts";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -76,46 +75,17 @@ export async function verifyClustering() {
     //data prep
     const prepedData = prepareData()
     //clustering
-
     const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
         .filter(attr => attr !== null) as string[]
-    const promise = cluster(prepedData, 4, 100)
-    promise.then((result: ClusterResult[]) => {
-        console.log(result)
-        scattermatrix.update(prepedData, attributeNames, result[3].clusterIndices)
-    })
+    const promise = cluster(prepedData, 100)
     //elbow
     //TODO: implement elbow method
     //presentation scattermatrix
-    //const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
-    //    .filter(attr => attr !== null) as string[]
-//
-    //Promise.all(asdf).then((result) => {
-    //    console.timeEnd('kmeans2')
-    //    scattermatrix.update(prepedData, attributeNames, result[3])
-    //})
+    promise.then((result: ClusterResult[]) => {
+        scattermatrix.update(prepedData, attributeNames, result[3].clusterIndices)
+    })
     //timeline
     //TODO: implement timeline
-}
-
-function dispatchClusterWorkers(data: any[][], k: number, maxIterations: number): Promise<any>[] {
-    const clusterPromises = []
-    for(let i = 1; i <= 10; i += 2) {
-        const promise = new Promise((resolve, reject) => {
-            const worker = new Worker('../../public/mlClusterWorker.js', {type: 'module'})
-            worker.postMessage({data: data, k: i, maxIterations: maxIterations})
-            worker.onmessage = (event) => {
-                const {clusterIndices} = event.data
-                resolve(clusterIndices)
-                worker.terminate()
-            }
-            worker.onerror = (event) => {
-                reject(event.message)
-            }
-        })
-        clusterPromises.push(promise)
-    }
-    return clusterPromises
 }
 
 /**

@@ -1,4 +1,4 @@
-import {attributeSelector, cancelClustering, verifyClustering} from "./main.ts";
+import {attributeSelector, cancelClustering, verifyClustering} from "./client.ts";
 
 const fileSelector = document.getElementById('filesSelect') as HTMLSelectElement
 const startButton = document.getElementById('startButton') as HTMLButtonElement
