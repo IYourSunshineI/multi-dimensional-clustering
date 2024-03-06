@@ -7,8 +7,7 @@ import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
 import {CsvParser} from "../utils/CsvParser.ts";
-import {cluster} from "./backendService.ts";
-import {ClusterResult} from "../utils/ClusterResult.ts";
+import {getAttributes} from "./backendService.ts";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -46,16 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
 export async function attributeSelector(filename: string): Promise<void> {
     attributeSelection = new Map<number, boolean>()
     //parse data
-    csvParser = new CsvParser(filename + '.csv')
-    csvParser.parse().then(() => {
-
-        //attribute selector
-        csvParser.attributes.forEach((attr, index) => {
+    getAttributes(filename).then((attributes: string[]) => {
+        attributes.forEach((attr, index) => {
             attributesToClusterDomObj.append(createCheckbox(attr, index, true))
             timeattributesDomObj.append(createCheckbox(attr, index, false))
         })
         attributeSelectorDomObj.hidden = false
     })
+
+
+    //csvParser = new CsvParser(filename + '.csv')
+    //csvParser.parse().then(() => {
+//
+    //    //attribute selector
+    //    csvParser.attributes.forEach((attr, index) => {
+    //        attributesToClusterDomObj.append(createCheckbox(attr, index, true))
+    //        timeattributesDomObj.append(createCheckbox(attr, index, false))
+    //    })
+    //    attributeSelectorDomObj.hidden = false
+    //})
 }
 
 /**
@@ -73,17 +81,18 @@ export function cancelClustering() {
 export async function verifyClustering() {
     hideAttributeSelector()
     //data prep
-    const prepedData = prepareData()
+    //const prepedData = prepareData()
     //clustering
-    const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
-        .filter(attr => attr !== null) as string[]
-    const promise = cluster(prepedData, 100)
+    await test()
+    //const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
+    //    .filter(attr => attr !== null) as string[]
+    //const promise = cluster(prepedData, 100)
     //elbow
     //TODO: implement elbow method
     //presentation scattermatrix
-    promise.then((result: ClusterResult[]) => {
-        scattermatrix.update(prepedData, attributeNames, result[3].clusterIndices)
-    })
+    //promise.then((result: ClusterResult[]) => {
+    //    scattermatrix.update(prepedData, attributeNames, result[3].clusterIndices)
+    //})
     //timeline
     //TODO: implement timeline
 }

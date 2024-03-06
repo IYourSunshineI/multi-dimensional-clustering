@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+    import * as d3 from 'd3';
 
 /**
  * This class is used to parse the provided csv files.
