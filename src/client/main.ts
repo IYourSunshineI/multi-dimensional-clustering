@@ -9,6 +9,7 @@ import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
 import {CsvParser} from "./utils/CsvParser.ts";
 import {kmeans} from "./clustering/kMeans.ts";
 import {cluster} from "./clustering/sklearnClustering";
+import {ClusterResult} from "./utils/ClusterResult.js";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -79,47 +80,10 @@ export async function verifyClustering() {
     const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
         .filter(attr => attr !== null) as string[]
     const promise = cluster(prepedData, 4, 100)
-    promise.then((result: number[]) => {
+    promise.then((result: ClusterResult[]) => {
         console.log(result)
-        scattermatrix.update(prepedData, attributeNames, result)
+        scattermatrix.update(prepedData, attributeNames, result[9].clusterIndices)
     })
-    //console.time('kmeans2')
-    //const asdf: Promise<number[]>[] = []
-    //for(let i = 1; i <= 10; i++) {
-    //    asdf.push(cluster(prepedData, i, 100))
-    //}
-    //Promise.all(asdf).then((results) => {
-    //    //console.log(results)
-    //    console.timeEnd('kmeans2')
-    //})
-
-    //console.time('kmeans1')
-    //const promise = dispatchClusterWorkers(prepedData, 4, 100)
-    //Promise.all(promise).then((results) => {
-    //    console.timeEnd('kmeans1')
-    //})
-
-    //console.time('kmeans3')
-    //const worker = new Worker('/public/clusterWorker.js')
-    //worker.postMessage({data: prepedData, k: 4, maxIterations: 100})
-    //worker.onmessage = (event) => {
-    //    const {clusterIndices} = event.data
-    //    console.timeEnd('kmeans3')
-    //    worker.terminate()
-    //}
-
-    //const attributeNames = csvParser.attributes.map((attr, index) => attributeSelection.get(index) ? attr : null)
-    //    .filter(attr => attr !== null) as string[]
-    //console.time('kmeans4')
-    //const promise = dispatchClusterWorkers(prepedData, 4, 100)
-    //Promise.all(promise).then((results) => {
-    //    console.timeEnd('kmeans4')
-    //    console.log(results[3][1])
-    //    scattermatrix.update(prepedData, attributeNames, results[3][1])
-    //}).catch((error) => {
-    //    console.log(error)
-    //})
-
     //elbow
     //TODO: implement elbow method
     //presentation scattermatrix
