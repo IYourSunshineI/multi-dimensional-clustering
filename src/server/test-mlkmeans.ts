@@ -5,7 +5,37 @@
 import { kmeans } from 'ml-kmeans';
 import {ClusterResult} from "../client/utils/ClusterResult.js";
 
-export async function cluster (data: number[][], k: number, maxIterations: number) {
+export async function syncCluster (data: number[][], k: number, maxIterations: number) {
+    return new Promise<ClusterResult[]>((resolve, _) => {
+        const results = [];
+        const ks = [];
+
+        console.time('kmeans')
+        for (let k = 1; k <= 10; k++) {
+            const res = kmeans(data, k, {initialization: "random", maxIterations: maxIterations})
+            results.push(res)
+            ks.push(k)
+        }
+        console.timeEnd('kmeans')
+
+        console.time('wcss')
+        let wcss = results.map(value => calculateWCSS(data, value.clusters, value.centroids));
+        console.timeEnd('wcss')
+
+        const clusterResults: ClusterResult[] = [];
+        for(let i = 0; i < results.length; i++) {
+            clusterResults.push({
+                clusterIndices: results[i].clusters,
+                wcss: wcss[i],
+                k: ks[i]
+            })
+        }
+
+        resolve(clusterResults)
+    })
+}
+
+export async function asyncCluster (data: number[][], k: number, maxIterations: number) {
     return new Promise<ClusterResult[]>((resolve, _) => {
         const results = [];
         //const ks = [];
@@ -13,7 +43,7 @@ export async function cluster (data: number[][], k: number, maxIterations: numbe
         console.time('kmeans')
         for(let k = 1; k <= 10; k++) {
             const promise = new Promise<ClusterResult>((resolve, _) => {
-                const res = kmeans(data, k, { initialization: "kmeans++", maxIterations: maxIterations})
+                const res = kmeans(data, k, { initialization: "random", maxIterations: maxIterations})
 
                 const clusterRes: ClusterResult = {
                     clusterIndices: res.clusters,
@@ -30,17 +60,6 @@ export async function cluster (data: number[][], k: number, maxIterations: numbe
             console.timeEnd('kmeans')
             resolve(res)
         })
-
-        //console.timeEnd('kmeans')
-//
-        //console.time('wcss')
-        //let wcss = results.map(value => calculateWCSS(data, value.clusters, value.centroids));
-        //console.timeEnd('wcss')
-//
-        //resolve({clusterIndices: results.map(value => value.clusters),
-        //    wcss: wcss,
-        //    k: ks
-        //})
     })
 }
 

@@ -1,7 +1,7 @@
 import express from "express";
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
-import { cluster } from './test-mlkmeans.js'
+import { asyncCluster, syncCluster } from './test-mlkmeans.js'
 
 const app = express();
 
@@ -13,7 +13,7 @@ app.get("/hello", (_, res) => {
 });
 
 app.post("/cluster", (req, res) => {
-  cluster(req.body.data, req.body.k, req.body.maxIterations).then((result) => {
+  syncCluster(req.body.data, req.body.k, req.body.maxIterations).then((result) => {
     res.send(result)
   }).catch((error) => {
     res.send(error)

@@ -82,7 +82,7 @@ export async function verifyClustering() {
     const promise = cluster(prepedData, 4, 100)
     promise.then((result: ClusterResult[]) => {
         console.log(result)
-        scattermatrix.update(prepedData, attributeNames, result[9].clusterIndices)
+        scattermatrix.update(prepedData, attributeNames, result[3].clusterIndices)
     })
     //elbow
     //TODO: implement elbow method
