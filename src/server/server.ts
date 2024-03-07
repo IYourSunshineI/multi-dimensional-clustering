@@ -48,7 +48,9 @@ app.get("/attributes", (req, res) => {
  */
 app.get("/cluster", (req, res) => {
     const filename = req.query.filename as string
-    const selectedAttributeIndices = req.query.selectedAttributeIndices as unknown as number[]
+    const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
+        .split(',')
+        .map((index) => parseInt(index))
     const maxIterations = req.query.maxIterations as unknown as number
 
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}`
