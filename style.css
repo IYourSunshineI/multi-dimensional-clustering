@@ -64,8 +64,21 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
+
     > svg {
         position: absolute;
+    }
+}
+
+.elbow-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    .elbow-control-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 }
 
@@ -115,10 +128,30 @@ select {
     padding: 5px;
     cursor: pointer;
     margin-left: 5px;
+    text-align: center;
 }
 
 select:hover {
     border: 2px solid var(--container-dark);
+}
+
+.numberinput-container {
+    height: fit-content;
+    border-radius: 10px;
+    background-color: var(--container-dark);
+    padding: 5px 10px;
+
+    > input {
+        font-size: 16px;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        background: var(--container-light);
+        color: var(--dark-default);
+        padding: 5px;
+        margin-left: 5px;
+        text-align: center;
+        min-width: 100px;
+    }
 }
 
 .attributeSelector {
@@ -153,7 +186,7 @@ select:hover {
             margin-bottom: 20px;
         }
 
-        .button-group{
+        .button-group {
             align-self: normal;
         }
     }

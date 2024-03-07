@@ -65,9 +65,10 @@ export class Scatterplot {
 
         //removes children of svg obj
         this.svg.selectAll('g').remove()
+        this.svg.selectAll('path').remove()
 
         const xScale = d3.scaleLinear()
-            .domain([data.length, 1])
+            .domain([1, data.length])
             .range([this.margin, this.width - this.margin])
 
         const yScale = d3.scaleLinear()
