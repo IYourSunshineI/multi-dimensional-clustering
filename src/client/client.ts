@@ -46,8 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param filename The name of the file to be loaded
  */
 export async function attributeSelector(filename: string): Promise<void> {
-    currentFileName = filename
+    if(currentFileName === filename) {
+        attributeSelectorDomObj.hidden = false
+        return
+    }
+
     attributeSelection = new Map<number, boolean>()
+    resetAttributeSelector()
+    currentFileName = filename
     //parse data
     getAttributes(filename).then((attributes: string[]) => {
         attributes.forEach((attr, index) => {
@@ -63,7 +69,7 @@ export async function attributeSelector(filename: string): Promise<void> {
  * when the clustering process gets cancelled.
  */
 export function cancelClustering() {
-    hideAttributeSelector()
+    attributeSelectorDomObj.hidden = true
 }
 
 /**
@@ -71,7 +77,7 @@ export function cancelClustering() {
  * attributes to cluster on and starts the clustering process.
  */
 export async function verifyClustering() {
-    hideAttributeSelector()
+    attributeSelectorDomObj.hidden = true
 
     //data prep
     let indices: number[] = []
@@ -82,6 +88,8 @@ export async function verifyClustering() {
             attributeSelection.delete(key)
         }
     })
+    //sort indices so caching in backend works
+    indices.sort((a, b) => a - b)
 
     //clustering
     console.time('serverTime')
@@ -108,8 +116,7 @@ export async function verifyClustering() {
 /**
  * This function hides the attribute selector and clears the checkboxes.
  */
-function hideAttributeSelector() {
-    attributeSelectorDomObj.hidden = true
+function resetAttributeSelector() {
     attributesToClusterDomObj.innerHTML = ''
     timeattributesDomObj.innerHTML = ''
 }
