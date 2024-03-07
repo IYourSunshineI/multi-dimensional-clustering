@@ -86,15 +86,23 @@ export async function verifyClustering() {
     //clustering
     console.time('serverTime')
     const promise = cluster(currentFileName, indices, 100)
-    //elbow
-    //TODO: implement elbow method
-    //presentation scattermatrix
+    //presentation
     promise.then((result: ClusterResult) => {
         console.timeEnd('serverTime')
+
+        //elbow
+        const elbowData = Array.from({length: result.k.length}).fill(0) as number[]
+        result.k.forEach(value => {
+            elbowData[value] = result.wcss[value - 1]
+        })
+        elbow.update(elbowData.slice(1))
+
+        //scattermatrix
         scattermatrix.update(result.data, result.attributeNames, result.clusterIndices[3])
+
+        //timeline
+        //TODO: implement timeline
     })
-    //timeline
-    //TODO: implement timeline
 }
 
 /**
