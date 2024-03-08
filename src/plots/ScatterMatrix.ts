@@ -28,12 +28,12 @@ export class ScatterMatrix {
     height: number;
     margin: number;
 
-    constructor(container: HTMLElement, width: number, height: number, margin: number) {
+    constructor(container: HTMLElement) {
         this.container = container
         this.canvasContainer = null
-        this.width = width
-        this.height = height
-        this.margin = margin
+        this.width = container.clientWidth
+        this.height = container.clientHeight
+        this.margin = 15
         this.svg = null
         this.canvas = []
         this.context = []
@@ -220,7 +220,7 @@ export class ScatterMatrix {
             .attr('width', this.width)
             .attr('height', this.height)
             .attr("viewBox", [0, 0, this.width, this.height])
-            .attr("style", "max-width: 100%; height: auto;")
+            .attr("style", "max-width: 100%; height: 100%;")
             .style('overflow', 'visible')
 
         if(!svg) {

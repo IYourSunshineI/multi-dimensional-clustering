@@ -65,6 +65,9 @@ body, html {
     justify-content: center;
     align-items: center;
 
+    min-height: 100%;
+    min-width: 100%;
+
     > svg {
         position: absolute;
     }

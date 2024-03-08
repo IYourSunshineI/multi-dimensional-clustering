@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timeline = new BarChart(timelineDomObj, 850, 350, 30)
     timeline.generate()
 
-    scattermatrix = new ScatterMatrix(scattermatrixDomObj, 850, 850, 15)
+    scattermatrix = new ScatterMatrix(scattermatrixDomObj)
     scattermatrix.generate()
 
     currentFileName = ''
