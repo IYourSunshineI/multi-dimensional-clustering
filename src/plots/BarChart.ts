@@ -3,6 +3,7 @@
 import * as d3 from "d3";
 import {Selection} from "d3";
 import {TimeDataGroup} from "../utils/TimeDataGroup.ts";
+import {colors} from "../utils/Colors.ts";
 
 /**
  * Class to generate a bar chart
@@ -77,7 +78,7 @@ export class BarChart {
 
         const color = d3.scaleOrdinal()
             .domain(['0', data[0].countPerCluster.length.toString()])
-            .range(d3.schemeCategory10)
+            .range(colors)
 
         const stackedData = d3.stack()
             // @ts-ignore

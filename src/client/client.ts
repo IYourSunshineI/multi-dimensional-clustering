@@ -125,6 +125,16 @@ export async function updatePresentation(k: number) {
 
     //timeline
     //TODO: implement timeline
+    const dummyTimeData = [
+        {countPerCluster: [1, 2, 1, 6], timestamp: 'March 1, 2020'},
+        {countPerCluster: [1, 1, 2, 6], timestamp: 'March 2, 2020'},
+        {countPerCluster: [2, 2, 2, 4], timestamp: 'March 3, 2020'},
+        {countPerCluster: [2, 3, 1, 4], timestamp: 'March 4, 2020'},
+        {countPerCluster: [5, 2, 0, 3], timestamp: 'March 5, 2020'},
+        {countPerCluster: [4, 1, 2, 3], timestamp: 'March 6, 2020'},
+        {countPerCluster: [2, 2, 2, 4], timestamp: 'March 7, 2020'},
+    ]
+    timeline.update(dummyTimeData)
 }
 
 /**
