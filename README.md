@@ -18,7 +18,7 @@
 ### Usage
 
 1. Upload the file you want to cluster to ```/public/datasets/```
-2. Refresh the browser and your file should be ready
+2. Refresh the browser and your file should be ready in the dropdown
 
 
 ### About
