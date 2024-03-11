@@ -12,9 +12,7 @@ dist
 dist-ssr
 *.local
 /test
-/public/datasets
 /public/logo.xcf
-/src/oldMain.ts
 
 # Editor directories and files
 .vscode/*

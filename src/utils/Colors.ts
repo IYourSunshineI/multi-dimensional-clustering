@@ -1,12 +1,12 @@
-const colors = [
-    '#ff0000',
-    '#a1ff0a',
-    '#147df5',
-    '#ff8700',
-    '#0aff99',
-    '#deff0a',
-    '#0aefff',
-    '#be0aff',
-    '#580aff',
-    '#ffd300',
+export const colors = [
+    '#ff6666',
+    '#3388ff',
+    '#99cc66',
+    '#ff9966',
+    '#33cccc',
+    '#6666cc',
+    '#ff66ff',
+    '#ffcc66',
+    '#ff11ff',
+    '#11ff11'
 ]
