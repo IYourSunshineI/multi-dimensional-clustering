@@ -3,11 +3,19 @@
  * It creates the initial empty graphs and handles the file selection, attribute selection, data preparation and clustering.
  */
 
+<<<<<<< HEAD:src/client/client.ts
 import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
 import {getAttributes, cluster, getFilenames} from "./backendService.ts";
 import {ClusterResult} from "../utils/ClusterResult.js";
+=======
+import {BarChart} from "./plot/BarChart.ts";
+import {Scatterplot} from "./plot/Scatterplot.ts";
+import {ScatterMatrix} from "./plot/ScatterMatrix.ts";
+import {CsvParser} from "./utils/CsvParser.ts";
+import {ClusterResult} from "./utils/ClusterResult.ts";
+>>>>>>> fe-only:src/main.ts
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement

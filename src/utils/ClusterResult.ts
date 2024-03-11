@@ -1,4 +1,5 @@
 /**
+<<<<<<< HEAD
  * Util interface for the result, that the cluster function returns.
  */
 export interface ClusterResult {
