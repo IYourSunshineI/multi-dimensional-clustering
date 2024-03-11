@@ -9,17 +9,9 @@ const attributeSelectionVerifyButton = document.getElementById('attributeSelecti
 const kInput = document.getElementById('kNumberInput') as HTMLInputElement
 const maxIterationsInput = document.getElementById('IterNumberInput') as HTMLInputElement
 
-let currentFilename: string
-
-currentFilename = fileSelector.value;
-
-fileSelector.addEventListener('change', () => {
-    currentFilename = fileSelector.value
-})
-
 startButton.addEventListener('click', () => {
-    if (currentFilename) {
-        attributeSelector(currentFilename)
+    if (fileSelector.value) {
+        attributeSelector(fileSelector.value)
     }
 })
 

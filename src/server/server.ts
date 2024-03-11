@@ -1,4 +1,6 @@
 import express from "express";
+import * as fs from "fs";
+import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
 import { cluster } from './clustering.ts'
@@ -12,6 +14,23 @@ const cache = new NodeCache({ stdTTL: ttl })
 
 app.use(bodyparser.json({ limit: "500mb" }));
 app.use(bodyparser.urlencoded({ limit: "500mb", extended: true}));
+
+/**
+ * Endpoint to get the filenames of the datasets.
+ *
+ * @returns The filenames of the datasets
+ */
+app.get("/filenames", (_, res) => {
+      fs.readdir('./public/datasets', (err, files) => {
+          if(err) {
+              res.status(500).send(err.message)
+          } else {
+              const filesWithoutExtension = files.map((file) => path.parse(file).name)
+              console.log(filesWithoutExtension)
+              res.json(filesWithoutExtension)
+          }
+      })
+})
 
 /**
  * Endpoint to get the attributes of a file.

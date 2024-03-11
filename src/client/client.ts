@@ -6,7 +6,7 @@
 import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
-import {getAttributes, cluster} from "./backendService.ts";
+import {getAttributes, cluster, getFilenames} from "./backendService.ts";
 import {ClusterResult} from "../utils/ClusterResult.js";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
@@ -38,6 +38,17 @@ document.addEventListener('DOMContentLoaded', () => {
     scattermatrix.generate()
 
     currentFileName = ''
+
+    //get all filenames and populate dropdown
+    getFilenames().then((filenames: string[]) => {
+        const dropdown = document.getElementById('filesSelect') as HTMLSelectElement
+        filenames.forEach(filename => {
+            const option = document.createElement('option')
+            option.value = filename
+            option.textContent = filename
+            dropdown.append(option)
+        })
+    })
 })
 
 /**

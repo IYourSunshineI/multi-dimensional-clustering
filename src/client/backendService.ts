@@ -1,5 +1,29 @@
 import {ClusterResult} from "../utils/ClusterResult.ts";
 
+
+/**
+ * This function calls the server to get the filenames of the datasets.
+ *
+ * @returns The filenames of the datasets
+ */
+export async function getFilenames(): Promise<string[]> {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', '/filenames', true)
+    xhr.send()
+
+    return new Promise((resolve, reject) => {
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                if(xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText))
+                } else {
+                    reject(xhr.responseText)
+                }
+            }
+        }
+    })
+}
+
 /**
  * This function calls the server to cluster the data.
  *
