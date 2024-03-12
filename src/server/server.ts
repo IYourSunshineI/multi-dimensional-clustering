@@ -7,7 +7,7 @@ import bodyparser from "body-parser";
 import NodeCache from "node-cache";
 import {getAttributes, parseData} from "./data.js";
 import {ClusterResult, ClusterResultCacheObject} from "../utils/ClusterResult.js";
-import { kmeans } from "./online_kmeans.ts";
+import {kmeans, startKmeans} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
 
 const app = express();
@@ -77,12 +77,12 @@ app.get("/cluster", (req, res) => {
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}`
 
     normalizeData(filename, selectedAttributeIndices).then(() => {
-        kmeans(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
+        startKmeans(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, maxIterations).then((clusterResult) => {
             parseData(filename, selectedAttributeIndices).then((parsedData) => {
                 const response: ClusterResult = {
                     data: parsedData.data,
                     attributeNames: parsedData.attributes,
-                    clusterIndices: [clusterResult],
+                    clusterIndices: clusterResult.clusterIndices,
                     wcss: [],
                     k: []
                 }

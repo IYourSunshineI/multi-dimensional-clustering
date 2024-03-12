@@ -132,7 +132,7 @@ export async function updatePresentation(k: number) {
     elbow.update(elbowData.slice(1))
 
     //scattermatrix
-    scattermatrix.update(currentClusterResult.data, currentClusterResult.attributeNames, currentClusterResult.clusterIndices[0])
+    scattermatrix.update(currentClusterResult.data, currentClusterResult.attributeNames, currentClusterResult.clusterIndices[k - 1])
 
     //timeline
     //TODO: implement timeline
