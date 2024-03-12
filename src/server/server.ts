@@ -3,17 +3,19 @@ import * as fs from "fs";
 import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
-import { cluster } from './clustering.ts'
+//import { cluster } from './clustering.ts'
 import NodeCache from "node-cache";
 import {getAttributes, parseData} from "./data.js";
 import {ClusterResult, ClusterResultCacheObject} from "../utils/ClusterResult.js";
+import { kmeans } from "./online_kmeans.ts";
+import {normalizeData} from "../utils/dataNormalizer.js";
 
 const app = express();
 const ttl = 60 * 60 //1h
-const cache = new NodeCache({ stdTTL: ttl })
+const cache = new NodeCache({stdTTL: ttl})
 
-app.use(bodyparser.json({ limit: "500mb" }));
-app.use(bodyparser.urlencoded({ limit: "500mb", extended: true}));
+app.use(bodyparser.json({limit: "500mb"}));
+app.use(bodyparser.urlencoded({limit: "500mb", extended: true}));
 
 /**
  * Endpoint to get the filenames of the datasets.
@@ -21,15 +23,15 @@ app.use(bodyparser.urlencoded({ limit: "500mb", extended: true}));
  * @returns The filenames of the datasets
  */
 app.get("/filenames", (_, res) => {
-      fs.readdir('./public/datasets', (err, files) => {
-          if(err) {
-              res.status(500).send(err.message)
-          } else {
-              const filesWithoutExtension = files.map((file) => path.parse(file).name)
-              console.log(filesWithoutExtension)
-              res.json(filesWithoutExtension)
-          }
-      })
+    fs.readdir('./public/datasets', (err, files) => {
+        if (err) {
+            res.status(500).send(err.message)
+        } else {
+            const filesWithoutExtension = files.map((file) => path.parse(file).name)
+            console.log(filesWithoutExtension)
+            res.json(filesWithoutExtension)
+        }
+    })
 })
 
 /**
@@ -43,7 +45,7 @@ app.get("/attributes", (req, res) => {
     const attKey = `attributes-${filename}`
 
     const value = getAndResetTTL(attKey)
-    if(value) {
+    if (value) {
         //cache hit
         res.send(value)
         return
@@ -74,9 +76,35 @@ app.get("/cluster", (req, res) => {
 
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}`
 
+    normalizeData(filename, selectedAttributeIndices).then(() => {
+        kmeans(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
+            parseData(filename, selectedAttributeIndices).then((parsedData) => {
+                const response: ClusterResult = {
+                    data: parsedData.data,
+                    attributeNames: parsedData.attributes,
+                    clusterIndices: [clusterResult],
+                    wcss: [],
+                    k: []
+                }
+                res.send(response)
+            })
+        })
+    })
+
+    /*
+    //console.time('asdf')
+    //cluster(filename, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
+    //    //clusterResult.data = parsedData.data
+    //    //clusterResult.attributeNames = parsedData.attributes
+    //    res.send(clusterResult)
+    //    console.timeEnd('asdf')
+    //}).catch((error) => {
+    //    res.status(500).send(error.message)
+    //})
+
     parseData(filename, selectedAttributeIndices).then((parsedData) => {
         const value = getAndResetTTL(clusterKey) as ClusterResultCacheObject
-        if(value) {
+        if (value) {
             //cache hit
             const response: ClusterResult = {
                 data: parsedData.data,
@@ -89,21 +117,50 @@ app.get("/cluster", (req, res) => {
             return
         }
 
-        cluster(parsedData.data, maxIterations).then((clusterResult) => {
-            clusterResult.attributeNames = parsedData.attributes
+        //cluster(parsedData.data, maxIterations).then((clusterResult) => {
+        //    clusterResult.attributeNames = parsedData.attributes
+        //    const cacheObject: ClusterResultCacheObject = {
+        //        clusterIndices: clusterResult.clusterIndices,
+        //        wcss: clusterResult.wcss,
+        //        k: clusterResult.k
+        //    }
+        //    cache.set(clusterKey, cacheObject, ttl)
+        //    res.send(clusterResult)
+        //}).catch((error) => {
+        //    res.status(500).send(error.message)
+        //})
+
+        calculateClusters(filename, selectedAttributeIndices, maxIterations).then((clusterResult) => {
             const cacheObject: ClusterResultCacheObject = {
                 clusterIndices: clusterResult.clusterIndices,
                 wcss: clusterResult.wcss,
                 k: clusterResult.k
             }
             cache.set(clusterKey, cacheObject, ttl)
+
+            clusterResult.data = parsedData.data
+            clusterResult.attributeNames = parsedData.attributes
             res.send(clusterResult)
         }).catch((error) => {
             res.status(500).send(error.message)
         })
+
+        //cluster(filename, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
+        //    const asdf: ClusterResult = {
+        //        data: parsedData.data,
+        //        attributeNames: parsedData.attributes,
+        //        clusterIndices: [clusterResult],
+        //        wcss: [],
+        //        k: []
+        //    }
+        //    res.send(asdf)
+        //}).catch((error) => {
+        //    res.status(500).send(error.message)
+        //})
     }).catch((error) => {
         res.status(500).send(error.message)
     })
+    */
 });
 
 /**
@@ -114,12 +171,12 @@ app.get("/cluster", (req, res) => {
  */
 function getAndResetTTL(key: string) {
     const value = cache.get(key)
-    if(value) {
+    if (value) {
         cache.set(key, value, ttl)
     }
     return value
 }
 
 ViteExpress.listen(app, 3000, () =>
-  console.log("Server is listening on port 3000..."),
+    console.log("Server is listening on port 3000..."),
 );
