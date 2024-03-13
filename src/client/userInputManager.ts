@@ -25,7 +25,7 @@ attributeSelectionVerifyButton.addEventListener('click', () => {
     kInput.value = k.toString()
     const maxIter = clamp(maxIterationsInput.valueAsNumber, 1, 10000)
     maxIterationsInput.value = maxIter.toString()
-    const batchSize = clamp(batchSizeInput.valueAsNumber, -1, Infinity)
+    const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
     batchSizeInput.value = batchSize.toString()
 
     verifyClustering(k, maxIter, batchSize)

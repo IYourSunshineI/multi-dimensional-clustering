@@ -18,18 +18,28 @@ parentPort?.on('message', async () => {
 })
 
 /**
- * This function starts the k-means algorithm with 10 workers and returns the results
+ * This function starts the k-means algorithm with 10 workers and returns the results.
+ * The function is used to perform the elbow method with k from 1 to 10.
  *
  * @param path The path to the file
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param maxIterations The maximum number of iterations for the k-means algorithm
+ * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  */
 export async function startKmeansForElbow(path: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number) {
-    console.time('onlineKmeans')
+    console.time('ElbowMethod')
     const promises: Promise<WorkerClusterResult>[] = []
 
     for (let i = 1; i <= 10; i++) {
-        const worker = new Worker(__filename, {workerData: {path, selectedAttributeIndices, k: i, maxIterations, batchSize}})
+        const worker = new Worker(__filename, {
+            workerData: {
+                path,
+                selectedAttributeIndices,
+                k: i,
+                maxIterations,
+                batchSize
+            }
+        })
         promises.push(new Promise<WorkerClusterResult>((resolve, reject) => {
             worker.on('message', (message) => {
                 resolve(message)
@@ -59,7 +69,7 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
                 clusterResult.wcss[result.k - 1] = result.wcss
             })
 
-            console.timeEnd('onlineKmeans')
+            console.timeEnd('ElbowMethod')
             resolve(clusterResult)
         }).catch((error) => {
             reject(error)
@@ -68,15 +78,20 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
 }
 
 /**
- * Performs the k-means algorithm
+ * Performs the k-means algorithm.
+ * The algorithm is implemented for streams, so it can handle large datasets.
+ * To improve performance, the algorithm can be used as the mini-batch k-means algorithm by setting the batchSize parameter
+ * to a value greater than 0.
  *
  * @param path The path to the file
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param k The number of centroids
  * @param maxIterations The maximum number of iterations for the k-means algorithm
+ * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  * @returns The cluster indices
  */
 export async function kmeans(path: string, selectedAttributeIndices: number[], k: number, maxIterations: number, batchSize: number) {
+    console.time(`kmeans${k}`)
     const numberOfLines = await getNumberOfLines(path)
 
     let centroids = await initializeCenters(path, selectedAttributeIndices, k)
@@ -85,18 +100,19 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
     let converged = false
     let stepNumber = 0
     while (!converged && stepNumber < maxIterations) {
-        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices, batchSize)
+        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices, batchSize > 0 ? batchSize : undefined)
         converged = stepResult.converged
         centroids = stepResult.centroids
         clusterIndices = stepResult.clusterIndices
         //console.log(converged, stepNumber)
         stepNumber++
     }
-    if(batchSize > 0) {
+    if (batchSize > 0) {
         const lastStep = await step(path, selectedAttributeIndices, centroids, clusterIndices)
         clusterIndices = lastStep.clusterIndices
     }
 
+    console.timeEnd(`kmeans${k}`)
     return clusterIndices
 }
 
@@ -107,6 +123,7 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param centroids The current centroids
  * @param clusterIndices The current cluster indices
+ * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  * @returns The updated centroids, cluster indices and whether the algorithm has converged
  */
 async function step(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number) {
@@ -114,7 +131,6 @@ async function step(path: string, selectedAttributeIndices: number[], centroids:
     clusterIndices = await updateClusterIndices(path, selectedAttributeIndices, centroids, clusterIndices, batchSize)
     const newCentroids = centroids.map((c) => c.pos)
     let converged = hasConverged(newCentroids, oldCentroids, squaredEuclidean, 1e-6)
-
     return {
         centroids: centroids,
         clusterIndices: clusterIndices,
@@ -129,42 +145,44 @@ async function step(path: string, selectedAttributeIndices: number[], centroids:
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param centroids The current centroids
  * @param clusterIndices The current cluster indices
+ * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  * @returns The updated cluster indices
  */
 async function updateClusterIndices(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number): Promise<number[]> {
-    const fileStream = fs.createReadStream(path)
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-    })
+    return new Promise<number[]>((resolve, reject) => {
+        const fileStream = fs.createReadStream(path)
+        const rl = readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        })
 
-    let lineNumber = -2
-    rl.on('line', (rawLine) => {
-        lineNumber++
-        if (lineNumber === -1) return
+        let lineNumber = -2
+        rl.on('line', (rawLine) => {
+            lineNumber++
+            if (lineNumber === -1) return
 
-        //only sample if line is in batch
-        if(batchSize) {
-            if(batchSize === 0) {
-                rl.close()
-                return
+            //if batchSize is set, only fit centoirs on a random subset of the data
+            if (batchSize) {
+                if (Math.random() >= .5) return
+
+                batchSize--
+                if (batchSize === 0) {
+                    rl.close()
+                    fileStream.close()
+                    resolve(clusterIndices)
+                }
             }
-            if(Math.random() >= .5) return
 
-            batchSize--
-        }
+            const line = rawLine.split(',').map(parseFloat)
+                .filter(value => !isNaN(value))
+            //.filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
 
-        const line = rawLine.split(',').map(parseFloat)
-            .filter(value => !isNaN(value))
-        //.filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
+            const oldClusterIndex = clusterIndices[lineNumber]
+            const newClusterIndex = nearestVector(centroids.map(d => d.pos), line)
+            clusterIndices[lineNumber] = newClusterIndex
+            updateCentroid(centroids, oldClusterIndex, newClusterIndex, line)
+        })
 
-        const oldClusterIndex = clusterIndices[lineNumber]
-        const newClusterIndex = nearestVector(centroids.map(d => d.pos), line)
-        clusterIndices[lineNumber] = newClusterIndex
-        updateCentroid(centroids, oldClusterIndex, newClusterIndex, line)
-    })
-
-    return new Promise((resolve, reject) => {
         rl.on('close', () => {
             rl.close()
             fileStream.close()
