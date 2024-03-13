@@ -13,8 +13,8 @@ const __filename = new URL(import.meta.url);
  * If the script is running as a worker, start the k-means algorithm
  */
 parentPort?.on('message', async () => {
-    const clusterIndices1 = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
-    parentPort?.postMessage({clusterIndices: clusterIndices1, wcss: 0, k: workerData.k})
+    const clusterIndices = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
+    parentPort?.postMessage({clusterIndices: clusterIndices, wcss: 0, k: workerData.k})
 })
 
 /**
@@ -175,7 +175,7 @@ async function updateClusterIndices(path: string, selectedAttributeIndices: numb
 
             const line = rawLine.split(',').map(parseFloat)
                 .filter(value => !isNaN(value))
-            //.filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
+                .filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
 
             const oldClusterIndex = clusterIndices[lineNumber]
             const newClusterIndex = nearestVector(centroids.map(d => d.pos), line)
@@ -292,7 +292,7 @@ async function reservoirSampling(path: string, selectedAttributeIndices: number[
         //filter out non-numeric values and only take the selected attributes into account
         const line = rawLine.split(',').map(parseFloat)
             .filter(value => !isNaN(value))
-        //.filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
+            .filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
 
         if (lineNumber < k) {
             centroids.push(line)
