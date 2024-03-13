@@ -3,12 +3,12 @@ import * as fs from "fs";
 import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
-//import { cluster } from './clustering.ts'
 import NodeCache from "node-cache";
 import {getAttributes, parseData} from "./data.js";
-import {ClusterResult} from "../utils/ClusterResult.js";
+import {ClusterResult, ClusterResultCacheObject} from "../utils/ClusterResult.js";
 import {startKmeansForElbow} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
+import {renderScatterCanvases} from "./renderer.js";
 
 const app = express();
 const ttl = 60 * 60 //1h
@@ -74,11 +74,32 @@ app.get("/cluster", (req, res) => {
     const maxIterations = req.query.maxIterations as unknown as number
     const batchSize = req.query.batchSize as unknown as number
 
-    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}`
+    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
 
-    normalizeData(filename, selectedAttributeIndices).then(() => {
+    const cachedValue = getAndResetTTL(clusterKey) as ClusterResultCacheObject
+    if(cachedValue) {
+        //cache hit
+        const response: ClusterResult = {
+            data: [],
+            attributeNames: [],
+            clusterIndices: cachedValue.clusterIndices,
+            wcss: cachedValue.wcss,
+            k: cachedValue.k
+        }
+        res.send(response)
+        return
+    }
+
+    normalizeData(filename).then(() => {
         startKmeansForElbow(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
             parseData(filename, selectedAttributeIndices).then((parsedData) => {
+                const cacheObject: ClusterResultCacheObject = {
+                    clusterIndices: clusterResult.clusterIndices,
+                    wcss: clusterResult.wcss,
+                    k: clusterResult.k
+                }
+                cache.set(clusterKey, cacheObject, ttl)
+
                 const response: ClusterResult = {
                     data: parsedData.data,
                     attributeNames: parsedData.attributes,
@@ -90,77 +111,40 @@ app.get("/cluster", (req, res) => {
             })
         })
     })
+});
 
-    /*
-    //console.time('asdf')
-    //cluster(filename, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
-    //    //clusterResult.data = parsedData.data
-    //    //clusterResult.attributeNames = parsedData.attributes
-    //    res.send(clusterResult)
-    //    console.timeEnd('asdf')
-    //}).catch((error) => {
-    //    res.status(500).send(error.message)
-    //})
 
-    parseData(filename, selectedAttributeIndices).then((parsedData) => {
-        const value = getAndResetTTL(clusterKey) as ClusterResultCacheObject
-        if (value) {
-            //cache hit
-            const response: ClusterResult = {
-                data: parsedData.data,
-                attributeNames: parsedData.attributes,
-                clusterIndices: value.clusterIndices,
-                wcss: value.wcss,
-                k: value.k
-            }
-            res.send(response)
-            return
-        }
+/**
+ * Endpoint to render the scatter canvases.
+ *
+ * @param filename The name of the file to render
+ * @param selectedAttributeIndices The indices of the attributes to render
+ * @param k The number of clusters
+ * @param width The width of the canvas
+ * @param height The height of the canvas
+ * @returns The image data of the scatter canvases
+ */
+app.get("/render", (req, res) => {
+    const filename = req.query.filename as string
+    const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
+        .split(',')
+        .map((index) => parseInt(index))
+    const k = req.query.k as unknown as number
+    const width = req.query.width as unknown as number
+    const height = req.query.height as unknown as number
 
-        //cluster(parsedData.data, maxIterations).then((clusterResult) => {
-        //    clusterResult.attributeNames = parsedData.attributes
-        //    const cacheObject: ClusterResultCacheObject = {
-        //        clusterIndices: clusterResult.clusterIndices,
-        //        wcss: clusterResult.wcss,
-        //        k: clusterResult.k
-        //    }
-        //    cache.set(clusterKey, cacheObject, ttl)
-        //    res.send(clusterResult)
-        //}).catch((error) => {
-        //    res.status(500).send(error.message)
-        //})
+    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
+    const clusterIndices = (getAndResetTTL(clusterKey) as ClusterResultCacheObject).clusterIndices[k - 1]
+    if(!clusterIndices) {
+        res.status(500).send('No cluster indices found')
+    }
 
-        calculateClusters(filename, selectedAttributeIndices, maxIterations).then((clusterResult) => {
-            const cacheObject: ClusterResultCacheObject = {
-                clusterIndices: clusterResult.clusterIndices,
-                wcss: clusterResult.wcss,
-                k: clusterResult.k
-            }
-            cache.set(clusterKey, cacheObject, ttl)
-
-            clusterResult.data = parsedData.data
-            clusterResult.attributeNames = parsedData.attributes
-            res.send(clusterResult)
-        }).catch((error) => {
-            res.status(500).send(error.message)
-        })
-
-        //cluster(filename, selectedAttributeIndices, 4, maxIterations).then((clusterResult) => {
-        //    const asdf: ClusterResult = {
-        //        data: parsedData.data,
-        //        attributeNames: parsedData.attributes,
-        //        clusterIndices: [clusterResult],
-        //        wcss: [],
-        //        k: []
-        //    }
-        //    res.send(asdf)
-        //}).catch((error) => {
-        //    res.status(500).send(error.message)
-        //})
+    renderScatterCanvases(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
+        res.send(imageDatas)
     }).catch((error) => {
+        console.log(error)
         res.status(500).send(error.message)
     })
-    */
 });
 
 /**

@@ -6,8 +6,9 @@
 import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
-import {getAttributes, cluster, getFilenames} from "./backendService.ts";
+import {getAttributes, cluster, getFilenames, render} from "./backendService.ts";
 import {ClusterResult} from "../utils/ClusterResult.js";
+import {FakeImageData} from "../utils/RenderResult.js";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -113,7 +114,9 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     promise.then((result: ClusterResult) => {
         console.timeEnd('serverTime')
         currentClusterResult = result
-        updatePresentation(k) //default k=4
+        render(currentFileName, indices, k, scattermatrix.getWidth(), scattermatrix.getHeight()).then((imageData: FakeImageData[]) => {
+            updatePresentation(k, imageData) //default k=4
+        })
     })
 }
 
@@ -122,7 +125,7 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
  *
  * @param k The number of clusters used for the clustering
  */
-export async function updatePresentation(k: number) {
+export async function updatePresentation(k: number, imageData: FakeImageData[]) {
     if (!currentClusterResult) return
     //elbow
     const elbowData = Array.from({length: currentClusterResult.k.length}).fill(0) as number[]
@@ -132,7 +135,7 @@ export async function updatePresentation(k: number) {
     elbow.update(elbowData.slice(1))
 
     //scattermatrix
-    scattermatrix.update(currentClusterResult.data, currentClusterResult.attributeNames, currentClusterResult.clusterIndices[k - 1])
+    scattermatrix.update(imageData, currentClusterResult.attributeNames)
 
     //timeline
     //TODO: implement timeline

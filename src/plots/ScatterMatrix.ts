@@ -2,6 +2,7 @@
 
 import * as d3 from "d3";
 import {Selection} from "d3";
+import { FakeImageData} from "../utils/RenderResult.js";
 
 /**
  * A class to generate a scatter matrix
@@ -80,14 +81,10 @@ export class ScatterMatrix {
     /**
      * Updates the scatter matrix with new data
      *
-     * @param data the data to be displayed
+     * @param imageData the image data to be displayed
      * @param attributes the attributes of the data set
-     * @param clusterIndices the cluster indices of each data point
      */
-    async update(data: number[][], attributes: string[], clusterIndices: number[]): Promise<void> {
-        //we call this at first so the svg is generated while the data is beeing prepared
-        const prepedData = this.prepareData(data, attributes, clusterIndices)
-
+    async update(imageData: FakeImageData[], attributes: string[]): Promise<void> {
         this.svg?.remove()
         this.svg = this.generateSvg()
         if(!this.svg) return
@@ -105,9 +102,9 @@ export class ScatterMatrix {
         this.generateCanvas(attributes.length, cellWidth, cellHeight)
 
         //horizontal scale
-        const xScale = attributes.map((_, i) => d3.scaleLinear()
+        const xScale = attributes.map((_) => d3.scaleLinear()
             // @ts-ignore
-            .domain(d3.extent(data.map((value) => value[i])))
+            .domain([0, 1])
             .rangeRound([this.margin / 2, cellWidth - this.margin / 2]))
 
         //vertical scale
@@ -136,78 +133,19 @@ export class ScatterMatrix {
         })
         */
 
-        // multiple webworkers
-        const chunkPromises: Promise<any>[] = [];
-
         console.time('time to Plot')
-        //await could be removed but for the timer to show the correct time it is needed
-        await prepedData.then(data => {
-            data.forEach((domainData, i) => {
-                this.context[i]?.clearRect(0, 0, this.width, this.height)
-                const worker = new Worker('../renderWorker.js')
-
-                const promise = new Promise((resolve, _) => {
-                    worker.onmessage = (event) => {
-                        //when the worker is done put image data on corresponding canvas
-                        const { imageData } = event.data
-                        this.context[i]?.putImageData(imageData, 0, 0)
-                        resolve('ok')
-                        worker.terminate()
-                    }
-                })
-
-                const xDomain = xScale[domainData[3][0]].domain()
-                const yDomain = yScale[domainData[3][1]].domain()
-                worker.postMessage({ data: domainData, xDomain, yDomain, cellWidth, cellHeight, margin: this.margin })
-                chunkPromises.push(promise)
-            })
+        imageData.forEach((imageData, i) => {
+            this.context[i]?.clearRect(0, 0, this.width, this.height)
+            const imgData = new ImageData(imageData.width, imageData.height, {colorSpace: imageData.colorSpace});
+            imgData.data.set(imageData.data)
+            this.context[i]?.putImageData(imgData, 0, 0)
         })
-
-        //wait for all workers to finish, then take time
-        Promise.all(chunkPromises).then(() => {
-            console.timeEnd('time to Plot')
-        })
+        console.timeEnd('time to Plot')
 
         //add attribute names
         this.addAttributeNames(this.svg, attributes, cellWidth, cellHeight)
 
         this.container.append(this.svg.node()!)
-    }
-
-    /**
-     * Prepares the data to be sent to the webworkers
-     *
-     * This function maps the 2-dimensional data array to a 3-dimensional data array.
-     * The original 2-dimensional array is essentially the same as the raw csv file
-     * The 3-dimensional array is a collection of 2-dimensional arrays, each containing a combination of two of the initial attributes.
-     * The third dimension is used to determine which cell the combination corresponds to.
-     *
-     * @param data the data to be prepared
-     * @param attributes the attributes of the data set
-     * @param clusterIndices the cluster indices of each data point
-     */
-    async prepareData(data: number[][], attributes: string[], clusterIndices: number[]): Promise<number[][][]> {
-        return new Promise<number[][][]>((resolve, _) => {
-            console.time('prepare chunks')
-            const columns = attributes.map((_, i) => data.map(row => row[i]))
-            const prepedData: number[][][] = Array.from({length: (columns.length * (columns.length - 1) / 2)}, () => [])
-            let index = 0
-            for(let att1 = 0; att1 < columns.length; att1++) {
-                for(let att2 = 0; att2 < columns.length; att2++) {
-                    if(att1 >= att2) continue
-                    const x = columns[att1]
-                    const y = columns[att2]
-                    prepedData[index].push(x)
-                    prepedData[index].push(y)
-                    prepedData[index].push(clusterIndices)
-                    prepedData[index].push([att1, att2])
-                    index++
-                }
-            }
-            console.timeEnd('prepare chunks')
-
-            resolve(prepedData)
-        })
     }
 
     /**
@@ -364,6 +302,22 @@ export class ScatterMatrix {
             .attr('text-anchor', 'middle')
             .attr('vertical-align', 'middle')
             .text(d => d)
+    }
+
+    /**
+     * Getter for the width
+     * @returns the width of the scatter matrix
+     */
+    getWidth(): number {
+        return this.width
+    }
+
+    /**
+     * Getter for the height
+     * @returns the height of the scatter matrix
+     */
+    getHeight(): number {
+        return this.height
     }
 
 }
