@@ -13,7 +13,7 @@ const __filename = new URL(import.meta.url);
  * If the script is running as a worker, start the k-means algorithm
  */
 parentPort?.on('message', async () => {
-    const clusterIndices1 = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations)
+    const clusterIndices1 = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
     parentPort?.postMessage({clusterIndices: clusterIndices1, wcss: 0, k: workerData.k})
 })
 
@@ -24,12 +24,12 @@ parentPort?.on('message', async () => {
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param maxIterations The maximum number of iterations for the k-means algorithm
  */
-export async function startKmeans(path: string, selectedAttributeIndices: number[], maxIterations: number) {
+export async function startKmeansForElbow(path: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number) {
     console.time('onlineKmeans')
     const promises: Promise<WorkerClusterResult>[] = []
 
     for (let i = 1; i <= 10; i++) {
-        const worker = new Worker(__filename, {workerData: {path, selectedAttributeIndices, k: i, maxIterations}})
+        const worker = new Worker(__filename, {workerData: {path, selectedAttributeIndices, k: i, maxIterations, batchSize}})
         promises.push(new Promise<WorkerClusterResult>((resolve, reject) => {
             worker.on('message', (message) => {
                 resolve(message)
@@ -76,7 +76,7 @@ export async function startKmeans(path: string, selectedAttributeIndices: number
  * @param maxIterations The maximum number of iterations for the k-means algorithm
  * @returns The cluster indices
  */
-async function kmeans(path: string, selectedAttributeIndices: number[], k: number, maxIterations: number) {
+export async function kmeans(path: string, selectedAttributeIndices: number[], k: number, maxIterations: number, batchSize: number) {
     const numberOfLines = await getNumberOfLines(path)
 
     let centroids = await initializeCenters(path, selectedAttributeIndices, k)
@@ -85,11 +85,16 @@ async function kmeans(path: string, selectedAttributeIndices: number[], k: numbe
     let converged = false
     let stepNumber = 0
     while (!converged && stepNumber < maxIterations) {
-        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices)
+        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices, batchSize)
         converged = stepResult.converged
         centroids = stepResult.centroids
         clusterIndices = stepResult.clusterIndices
+        //console.log(converged, stepNumber)
         stepNumber++
+    }
+    if(batchSize > 0) {
+        const lastStep = await step(path, selectedAttributeIndices, centroids, clusterIndices)
+        clusterIndices = lastStep.clusterIndices
     }
 
     return clusterIndices
@@ -104,9 +109,9 @@ async function kmeans(path: string, selectedAttributeIndices: number[], k: numbe
  * @param clusterIndices The current cluster indices
  * @returns The updated centroids, cluster indices and whether the algorithm has converged
  */
-async function step(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[]) {
+async function step(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number) {
     const oldCentroids = cloneDeep(centroids.map((c) => c.pos))
-    clusterIndices = await updateClusterIndices(path, selectedAttributeIndices, centroids, clusterIndices)
+    clusterIndices = await updateClusterIndices(path, selectedAttributeIndices, centroids, clusterIndices, batchSize)
     const newCentroids = centroids.map((c) => c.pos)
     let converged = hasConverged(newCentroids, oldCentroids, squaredEuclidean, 1e-6)
 
@@ -126,7 +131,7 @@ async function step(path: string, selectedAttributeIndices: number[], centroids:
  * @param clusterIndices The current cluster indices
  * @returns The updated cluster indices
  */
-async function updateClusterIndices(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[]): Promise<number[]> {
+async function updateClusterIndices(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number): Promise<number[]> {
     const fileStream = fs.createReadStream(path)
     const rl = readline.createInterface({
         input: fileStream,
@@ -137,6 +142,17 @@ async function updateClusterIndices(path: string, selectedAttributeIndices: numb
     rl.on('line', (rawLine) => {
         lineNumber++
         if (lineNumber === -1) return
+
+        //only sample if line is in batch
+        if(batchSize) {
+            if(batchSize === 0) {
+                rl.close()
+                return
+            }
+            if(Math.random() >= .5) return
+
+            batchSize--
+        }
 
         const line = rawLine.split(',').map(parseFloat)
             .filter(value => !isNaN(value))

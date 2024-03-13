@@ -91,7 +91,7 @@ export function cancelClustering() {
  * @param k The number of clusters to be created
  * @param maxIterations The maximum number of iterations for the clustering algorithm
  */
-export async function verifyClustering(k: number, maxIterations: number) {
+export async function verifyClustering(k: number, maxIterations: number, batchSize: number) {
     attributeSelectorDomObj.hidden = true
 
     //data prep
@@ -108,7 +108,7 @@ export async function verifyClustering(k: number, maxIterations: number) {
 
     //clustering
     console.time('serverTime')
-    const promise = cluster(currentFileName, indices, maxIterations)
+    const promise = cluster(currentFileName, indices, maxIterations, batchSize)
     //presentation
     promise.then((result: ClusterResult) => {
         console.timeEnd('serverTime')
@@ -132,7 +132,7 @@ export async function updatePresentation(k: number) {
     elbow.update(elbowData.slice(1))
 
     //scattermatrix
-    scattermatrix.update(currentClusterResult.data, currentClusterResult.attributeNames, currentClusterResult.clusterIndices[k - 1])
+    scattermatrix.update(currentClusterResult.data, currentClusterResult.attributeNames, currentClusterResult.clusterIndices[0])
 
     //timeline
     //TODO: implement timeline
