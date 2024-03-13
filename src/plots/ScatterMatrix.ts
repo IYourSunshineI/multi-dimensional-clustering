@@ -303,21 +303,4 @@ export class ScatterMatrix {
             .attr('vertical-align', 'middle')
             .text(d => d)
     }
-
-    /**
-     * Getter for the width
-     * @returns the width of the scatter matrix
-     */
-    getWidth(): number {
-        return this.width
-    }
-
-    /**
-     * Getter for the height
-     * @returns the height of the scatter matrix
-     */
-    getHeight(): number {
-        return this.height
-    }
-
 }

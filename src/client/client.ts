@@ -25,6 +25,7 @@ let attributeSelection: Map<number, boolean>
 
 let currentFileName: string
 let currentClusterResult: ClusterResult
+let currentAttributeIndices: number[]
 
 
 //initialise all graphs
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scattermatrix.generate()
 
     currentFileName = ''
+    currentAttributeIndices = []
 
     //get all filenames and populate dropdown
     getFilenames().then((filenames: string[]) => {
@@ -91,6 +93,7 @@ export function cancelClustering() {
  *
  * @param k The number of clusters to be created
  * @param maxIterations The maximum number of iterations for the clustering algorithm
+ * @param batchSize The size of the batch to use for the clustering algorithm
  */
 export async function verifyClustering(k: number, maxIterations: number, batchSize: number) {
     attributeSelectorDomObj.hidden = true
@@ -106,6 +109,7 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     })
     //sort indices so caching in backend works
     indices.sort((a, b) => a - b)
+    currentAttributeIndices = indices
 
     //clustering
     console.time('serverTime')
@@ -114,9 +118,15 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     promise.then((result: ClusterResult) => {
         console.timeEnd('serverTime')
         currentClusterResult = result
-        render(currentFileName, indices, k, scattermatrix.getWidth(), scattermatrix.getHeight()).then((imageData: FakeImageData[]) => {
-            updatePresentation(k, imageData) //default k=4
+
+        //elbow (since the elbow does not change with different k, we only need to update once the clustering is done)
+        const elbowData = Array.from({length: currentClusterResult.k.length}).fill(0) as number[]
+        currentClusterResult.k.forEach(value => {
+            elbowData[value] = currentClusterResult.wcss[value - 1]
         })
+        elbow.update(elbowData.slice(1))
+
+        updatePresentation(k)
     })
 }
 
@@ -125,14 +135,11 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
  *
  * @param k The number of clusters used for the clustering
  */
-export async function updatePresentation(k: number, imageData: FakeImageData[]) {
+export async function updatePresentation(k: number) {
     if (!currentClusterResult) return
-    //elbow
-    const elbowData = Array.from({length: currentClusterResult.k.length}).fill(0) as number[]
-    currentClusterResult.k.forEach(value => {
-        elbowData[value] = currentClusterResult.wcss[value - 1]
-    })
-    elbow.update(elbowData.slice(1))
+
+    //render
+    const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, k, scattermatrix.width, scattermatrix.height)
 
     //scattermatrix
     scattermatrix.update(imageData, currentClusterResult.attributeNames)

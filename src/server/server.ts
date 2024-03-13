@@ -4,8 +4,8 @@ import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
 import NodeCache from "node-cache";
-import {getAttributes, parseData} from "./data.js";
-import {ClusterResult, ClusterResultCacheObject} from "../utils/ClusterResult.js";
+import {getAllAttributes, getAttributes} from "./data.js";
+import {ClusterResult} from "../utils/ClusterResult.js";
 import {startKmeansForElbow} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
 import {renderScatterCanvases} from "./renderer.js";
@@ -50,7 +50,7 @@ app.get("/attributes", (req, res) => {
         return
     }
 
-    getAttributes(filename).then((attributes) => {
+    getAllAttributes(filename).then((attributes) => {
         cache.set(attKey, attributes, ttl)
         res.send(attributes)
     }).catch((error) => {
@@ -76,38 +76,24 @@ app.get("/cluster", (req, res) => {
 
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
 
-    const cachedValue = getAndResetTTL(clusterKey) as ClusterResultCacheObject
+    const cachedValue = getAndResetTTL(clusterKey) as ClusterResult
     if(cachedValue) {
         //cache hit
-        const response: ClusterResult = {
-            data: [],
-            attributeNames: [],
-            clusterIndices: cachedValue.clusterIndices,
-            wcss: cachedValue.wcss,
-            k: cachedValue.k
-        }
-        res.send(response)
+        res.send(cachedValue)
         return
     }
 
     normalizeData(filename).then(() => {
         startKmeansForElbow(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
-            parseData(filename, selectedAttributeIndices).then((parsedData) => {
-                const cacheObject: ClusterResultCacheObject = {
+            getAttributes(filename, selectedAttributeIndices).then((attributes) => {
+                const result: ClusterResult = {
+                    attributeNames: attributes,
                     clusterIndices: clusterResult.clusterIndices,
                     wcss: clusterResult.wcss,
                     k: clusterResult.k
                 }
-                cache.set(clusterKey, cacheObject, ttl)
-
-                const response: ClusterResult = {
-                    data: parsedData.data,
-                    attributeNames: parsedData.attributes,
-                    clusterIndices: clusterResult.clusterIndices,
-                    wcss: [],
-                    k: []
-                }
-                res.send(response)
+                cache.set(clusterKey, result, ttl)
+                res.send(result)
             })
         })
     })
@@ -134,7 +120,7 @@ app.get("/render", (req, res) => {
     const height = req.query.height as unknown as number
 
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
-    const clusterIndices = (getAndResetTTL(clusterKey) as ClusterResultCacheObject).clusterIndices[k - 1]
+    const clusterIndices = (getAndResetTTL(clusterKey) as ClusterResult).clusterIndices[k - 1]
     if(!clusterIndices) {
         res.status(500).send('No cluster indices found')
     }

@@ -31,6 +31,7 @@ export async function getFilenames(): Promise<string[]> {
  * @param filename The name of the file to cluster
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param maxIterations The maximum number of iterations for the k-means algorithm
+ * @param batchSize The size of the batch to use for the k-means algorithm
  */
 export async function cluster(filename: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number): Promise<ClusterResult> {
     const xhr = new XMLHttpRequest()
