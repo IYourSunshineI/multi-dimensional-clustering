@@ -83,8 +83,23 @@ app.get("/cluster", (req, res) => {
         return
     }
 
-    normalizeData(filename).then(() => {
-        startKmeansForElbow(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
+    if(!fs.existsSync(`./public/datasets_normalized/${filename}.csv`)) {
+        normalizeData(filename).then(() => {
+            startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
+                getAttributes(filename, selectedAttributeIndices).then((attributes) => {
+                    const result: ClusterResult = {
+                        attributeNames: attributes,
+                        clusterIndices: clusterResult.clusterIndices,
+                        wcss: clusterResult.wcss,
+                        k: clusterResult.k
+                    }
+                    cache.set(clusterKey, result, ttl)
+                    res.send(result)
+                })
+            })
+        })
+    } else {
+        startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
             getAttributes(filename, selectedAttributeIndices).then((attributes) => {
                 const result: ClusterResult = {
                     attributeNames: attributes,
@@ -96,7 +111,7 @@ app.get("/cluster", (req, res) => {
                 res.send(result)
             })
         })
-    })
+    }
 });
 
 
@@ -125,7 +140,7 @@ app.get("/render", (req, res) => {
         res.status(500).send('No cluster indices found')
     }
 
-    renderScatterCanvases(`./public/datasets/${filename}_normalized.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
+    renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
         res.send(imageDatas)
     }).catch((error) => {
         console.log(error)

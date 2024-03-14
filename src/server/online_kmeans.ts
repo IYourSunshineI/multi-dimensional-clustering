@@ -57,7 +57,6 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
     return new Promise<ClusterResult>((resolve, reject) => {
         Promise.all(promises).then((results) => {
             const clusterResult: ClusterResult = {
-                data: [],
                 attributeNames: [],
                 clusterIndices: Array.from({length: 10}, () => []),
                 wcss: Array.from({length: 10}, () => 0),
