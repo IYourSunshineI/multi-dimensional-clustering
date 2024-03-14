@@ -13,8 +13,9 @@ const __filename = new URL(import.meta.url);
  * If the script is running as a worker, start the k-means algorithm
  */
 parentPort?.on('message', async () => {
-    const clusterIndices = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
-    parentPort?.postMessage({clusterIndices: clusterIndices, wcss: 0, k: workerData.k})
+    const clusterResult = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
+    const wcss = await calculateWCSS(workerData.path, workerData.selectedAttributeIndices, clusterResult.centroids, clusterResult.clusterIndices)
+    parentPort?.postMessage({clusterIndices: clusterResult.clusterIndices, wcss: wcss, k: workerData.k})
 })
 
 /**
@@ -112,7 +113,7 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
     }
 
     console.timeEnd(`kmeans${k}`)
-    return clusterIndices
+    return {clusterIndices, centroids}
 }
 
 /**
@@ -173,7 +174,6 @@ async function updateClusterIndices(path: string, selectedAttributeIndices: numb
             }
 
             const line = rawLine.split(',').map(parseFloat)
-                .filter(value => !isNaN(value))
                 .filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
 
             const oldClusterIndex = clusterIndices[lineNumber]
@@ -290,7 +290,6 @@ async function reservoirSampling(path: string, selectedAttributeIndices: number[
 
         //filter out non-numeric values and only take the selected attributes into account
         const line = rawLine.split(',').map(parseFloat)
-            .filter(value => !isNaN(value))
             .filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
 
         if (lineNumber < k) {
@@ -342,6 +341,51 @@ async function getNumberOfLines(path: string) {
             rl.close()
             fileStream.close()
             resolve(lineNumber)
+        })
+
+        rl.on('error', (err) => {
+            rl.close()
+            fileStream.close()
+            reject(err)
+        })
+    })
+}
+
+/**
+ * Calculate the within-cluster sum of squares (WCSS)
+ *
+ * @param path the path to the file
+ * @param selectedAttributeIndices the indices of the attributes to cluster on
+ * @param centroids the centroids
+ * @param clusterIndices the cluster indices
+ */
+async function calculateWCSS(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[]) {
+    console.time('wcss')
+    const fileStream = fs.createReadStream(path)
+    const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+    })
+
+    let wcss = 0
+    let lineNumber = -2
+    rl.on('line', (rawLine) => {
+        lineNumber++
+        if (lineNumber === -1) return
+
+        const line = rawLine.split(',').map(parseFloat)
+            .filter((value, index) => (!isNaN(value) && selectedAttributeIndices.includes(index)))
+
+        const clusterIndex = clusterIndices[lineNumber]
+        wcss += squaredEuclidean(centroids[clusterIndex].pos, line)
+    })
+
+    return new Promise<number>((resolve, reject) => {
+        rl.on('close', () => {
+            rl.close()
+            fileStream.close()
+            console.timeEnd('wcss')
+            resolve(wcss)
         })
 
         rl.on('error', (err) => {
