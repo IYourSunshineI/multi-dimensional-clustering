@@ -100,7 +100,7 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
     let converged = false
     let stepNumber = 0
     while (!converged && stepNumber < maxIterations) {
-        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices, batchSize > 0 ? batchSize : undefined)
+        const stepResult = await step(path, selectedAttributeIndices, centroids, clusterIndices, false, batchSize > 0 ? batchSize : undefined)
         converged = stepResult.converged
         centroids = stepResult.centroids
         clusterIndices = stepResult.clusterIndices
@@ -108,7 +108,7 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
         stepNumber++
     }
     if (batchSize > 0) {
-        const lastStep = await step(path, selectedAttributeIndices, centroids, clusterIndices)
+        const lastStep = await step(path, selectedAttributeIndices, centroids, clusterIndices, true)
         clusterIndices = lastStep.clusterIndices
     }
 
@@ -123,12 +123,13 @@ export async function kmeans(path: string, selectedAttributeIndices: number[], k
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param centroids The current centroids
  * @param clusterIndices The current cluster indices
+ * @param lastStep Whether it's the last step of the k-means algorithm
  * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  * @returns The updated centroids, cluster indices and whether the algorithm has converged
  */
-async function step(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number) {
+async function step(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], lastStep: boolean, batchSize?: number) {
     const oldCentroids = cloneDeep(centroids.map((c) => c.pos))
-    clusterIndices = await updateClusterIndices(path, selectedAttributeIndices, centroids, clusterIndices, batchSize)
+    clusterIndices = await updateClusterIndices(path, selectedAttributeIndices, centroids, clusterIndices, lastStep, batchSize)
     const newCentroids = centroids.map((c) => c.pos)
     let converged = hasConverged(newCentroids, oldCentroids, squaredEuclidean, 1e-6)
     return {
@@ -145,10 +146,11 @@ async function step(path: string, selectedAttributeIndices: number[], centroids:
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param centroids The current centroids
  * @param clusterIndices The current cluster indices
+ * @param lastStep Whether it's the last step of the k-means algorithm
  * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
  * @returns The updated cluster indices
  */
-async function updateClusterIndices(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], batchSize?: number): Promise<number[]> {
+async function updateClusterIndices(path: string, selectedAttributeIndices: number[], centroids: Centroid[], clusterIndices: number[], lastStep: boolean, batchSize?: number): Promise<number[]> {
     return new Promise<number[]>((resolve, reject) => {
         const fileStream = fs.createReadStream(path)
         const rl = readline.createInterface({
@@ -179,7 +181,10 @@ async function updateClusterIndices(path: string, selectedAttributeIndices: numb
             const oldClusterIndex = clusterIndices[lineNumber]
             const newClusterIndex = nearestVector(centroids.map(d => d.pos), line)
             clusterIndices[lineNumber] = newClusterIndex
-            updateCentroid(centroids, oldClusterIndex, newClusterIndex, line)
+            if(!lastStep) {
+                //only update the centroids if it's not the last step
+                updateCentroid(centroids, oldClusterIndex, newClusterIndex, line)
+            }
         })
 
         rl.on('close', () => {
