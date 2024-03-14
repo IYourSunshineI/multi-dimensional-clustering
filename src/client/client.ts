@@ -7,7 +7,7 @@ import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
 import {getAttributes, cluster, getFilenames, render} from "./backendService.ts";
-import {ClusterResult} from "../utils/ClusterResult.js";
+import {ElbowResult} from "../utils/ElbowResult.js";
 import {FakeImageData} from "../utils/RenderResult.js";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
@@ -24,7 +24,7 @@ let scattermatrix: ScatterMatrix
 let attributeSelection: Map<number, boolean>
 
 let currentFileName: string
-let currentClusterResult: ClusterResult
+let currentElbowResult: ElbowResult
 let currentAttributeIndices: number[]
 
 
@@ -115,14 +115,14 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     console.time('serverTime')
     const promise = cluster(currentFileName, indices, maxIterations, batchSize)
     //presentation
-    promise.then((result: ClusterResult) => {
+    promise.then((result: ElbowResult) => {
         console.timeEnd('serverTime')
-        currentClusterResult = result
+        currentElbowResult = result
 
         //elbow (since the elbow does not change with different k, we only need to update once the clustering is done)
-        const elbowData = Array.from({length: currentClusterResult.k.length}).fill(0) as number[]
-        currentClusterResult.k.forEach(value => {
-            elbowData[value] = currentClusterResult.wcss[value - 1]
+        const elbowData = Array.from({length: currentElbowResult.k.length}).fill(0) as number[]
+        currentElbowResult.k.forEach(value => {
+            elbowData[value] = currentElbowResult.wcss[value - 1]
         })
         elbow.update(elbowData.slice(1))
 
@@ -136,13 +136,13 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
  * @param k The number of clusters used for the clustering
  */
 export async function updatePresentation(k: number) {
-    if (!currentClusterResult) return
+    if (!currentElbowResult) return
 
     //render
     const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, k, scattermatrix.width, scattermatrix.height)
 
     //scattermatrix
-    scattermatrix.update(imageData, currentClusterResult.attributeNames)
+    scattermatrix.update(imageData, currentElbowResult.attributeNames)
 
     //timeline
     //TODO: implement timeline

@@ -5,7 +5,8 @@ import {Centroid} from "../utils/Centroid.js";
 import {hasConverged} from "ml-kmeans/lib/utils.js";
 import {default as cloneDeep} from "lodash/cloneDeep.js";
 import {Worker, parentPort, workerData} from "worker_threads";
-import {ClusterResult, WorkerClusterResult} from "../utils/ClusterResult.js";
+import {ElbowResult, WorkerElbowResult} from "../utils/ElbowResult.js";
+import {getNumberOfLines} from "./data.js";
 
 const __filename = new URL(import.meta.url);
 
@@ -29,7 +30,7 @@ parentPort?.on('message', async () => {
  */
 export async function startKmeansForElbow(path: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number) {
     console.time('ElbowMethod')
-    const promises: Promise<WorkerClusterResult>[] = []
+    const promises: Promise<WorkerElbowResult>[] = []
 
     for (let i = 1; i <= 10; i++) {
         const worker = new Worker(__filename, {
@@ -41,7 +42,7 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
                 batchSize
             }
         })
-        promises.push(new Promise<WorkerClusterResult>((resolve, reject) => {
+        promises.push(new Promise<WorkerElbowResult>((resolve, reject) => {
             worker.on('message', (message) => {
                 resolve(message)
                 worker.terminate()
@@ -55,22 +56,35 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
         worker.postMessage('start')
     }
 
-    return new Promise<ClusterResult>((resolve, reject) => {
+    return new Promise<ElbowResult>((resolve, reject) => {
         Promise.all(promises).then((results) => {
-            const clusterResult: ClusterResult = {
+            const clusterResult: ElbowResult = {
                 attributeNames: [],
-                clusterIndices: Array.from({length: 10}, () => []),
                 wcss: Array.from({length: 10}, () => 0),
                 k: Array.from({length: 10}, (_, i) => i + 1)
             }
 
-            results.forEach((result) => {
-                clusterResult.clusterIndices[result.k - 1] = result.clusterIndices
-                clusterResult.wcss[result.k - 1] = result.wcss
-            })
+            const clusterIndices: number[][] = Array.from({length: 10}, () => [])
+            for(let i = 0; i < results.length; i++) {
+                clusterResult.wcss[results[i].k - 1] = results[i].wcss
+                clusterIndices[results[i].k - 1] = results[i].clusterIndices
+            }
 
-            console.timeEnd('ElbowMethod')
-            resolve(clusterResult)
+            console.time('persistClusterIndices')
+            const writeStream = fs.createWriteStream(
+                `./public/clusterResults/${path.split('/').pop()?.split('.')[0]}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`)
+            writeStream.write(`${clusterResult.k.join(',')}\n`)
+            for(let i = 0; i < clusterIndices[0].length; i++) {
+                writeStream.write(`${clusterIndices.map(value => value[i])}\n`)
+            }
+            writeStream.end()
+            console.timeEnd('persistClusterIndices')
+
+            writeStream.on('finish', () => {
+                writeStream.close()
+                console.timeEnd('ElbowMethod')
+                resolve(clusterResult)
+            })
         }).catch((error) => {
             reject(error)
         })
@@ -88,7 +102,7 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
  * @param k The number of centroids
  * @param maxIterations The maximum number of iterations for the k-means algorithm
  * @param batchSize The size of the batch to use for the mini-batch k-means algorithm (or 0 for the standard k-means algorithm)
- * @returns The cluster indices
+ * @returns The cluster indices and centroids
  */
 export async function kmeans(path: string, selectedAttributeIndices: number[], k: number, maxIterations: number, batchSize: number) {
     console.time(`kmeans${k}`)
@@ -312,40 +326,6 @@ async function reservoirSampling(path: string, selectedAttributeIndices: number[
             rl.close()
             fileStream.close()
             resolve(centroids)
-        })
-
-        rl.on('error', (err) => {
-            rl.close()
-            fileStream.close()
-            reject(err)
-        })
-    })
-}
-
-/**
- * Get the number of lines in a file
- * (not including the first line, which is assumed to be the header)
- *
- * @param path The path to the file
- * @returns The number of lines in the file
- */
-async function getNumberOfLines(path: string) {
-    const fileStream = fs.createReadStream(path)
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-    })
-
-    let lineNumber = -1
-    rl.on('line', () => {
-        lineNumber++
-    })
-
-    return new Promise<number>((resolve, reject) => {
-        rl.on('close', () => {
-            rl.close()
-            fileStream.close()
-            resolve(lineNumber)
         })
 
         rl.on('error', (err) => {

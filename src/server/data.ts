@@ -37,3 +37,39 @@ export async function getAttributes(filename: string, indices: number[]): Promis
     const attributes = await getAllAttributes(filename)
     return indices.map((index) => attributes[index])
 }
+
+
+
+/**
+ * Get the number of lines in a file
+ * (not including the first line, which is assumed to be the header)
+ *
+ * @param path The path to the file
+ * @returns The number of lines in the file
+ */
+export async function getNumberOfLines(path: string) {
+    const fileStream = fs.createReadStream(path)
+    const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+    })
+
+    let lineNumber = -1
+    rl.on('line', () => {
+        lineNumber++
+    })
+
+    return new Promise<number>((resolve, reject) => {
+        rl.on('close', () => {
+            rl.close()
+            fileStream.close()
+            resolve(lineNumber)
+        })
+
+        rl.on('error', (err) => {
+            rl.close()
+            fileStream.close()
+            reject(err)
+        })
+    })
+}

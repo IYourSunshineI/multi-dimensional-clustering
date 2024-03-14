@@ -4,11 +4,12 @@ import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
 import NodeCache from "node-cache";
-import {getAllAttributes, getAttributes} from "./data.js";
-import {ClusterResult} from "../utils/ClusterResult.js";
+import {getAllAttributes, getAttributes, getNumberOfLines} from "./data.js";
+import {ElbowResult} from "../utils/ElbowResult.js";
 import {startKmeansForElbow} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
 import {renderScatterCanvases} from "./renderer.js";
+import * as readline from "readline";
 
 const app = express();
 const ttl = 60 * 60 //1h
@@ -76,7 +77,7 @@ app.get("/cluster", (req, res) => {
 
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
 
-    const cachedValue = getAndResetTTL(clusterKey) as ClusterResult
+    const cachedValue = getAndResetTTL(clusterKey) as ElbowResult
     if(cachedValue) {
         //cache hit
         res.send(cachedValue)
@@ -87,9 +88,8 @@ app.get("/cluster", (req, res) => {
         normalizeData(filename).then(() => {
             startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
                 getAttributes(filename, selectedAttributeIndices).then((attributes) => {
-                    const result: ClusterResult = {
+                    const result: ElbowResult = {
                         attributeNames: attributes,
-                        clusterIndices: clusterResult.clusterIndices,
                         wcss: clusterResult.wcss,
                         k: clusterResult.k
                     }
@@ -101,9 +101,8 @@ app.get("/cluster", (req, res) => {
     } else {
         startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
             getAttributes(filename, selectedAttributeIndices).then((attributes) => {
-                const result: ClusterResult = {
+                const result: ElbowResult = {
                     attributeNames: attributes,
-                    clusterIndices: clusterResult.clusterIndices,
                     wcss: clusterResult.wcss,
                     k: clusterResult.k
                 }
@@ -134,18 +133,37 @@ app.get("/render", (req, res) => {
     const width = req.query.width as unknown as number
     const height = req.query.height as unknown as number
 
-    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
-    const clusterIndices = (getAndResetTTL(clusterKey) as ClusterResult).clusterIndices[k - 1]
-    if(!clusterIndices) {
-        res.status(500).send('No cluster indices found')
-    }
+    getNumberOfLines(`./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`).then((numberOfLines) => {
+        const fileStream = fs.createReadStream(`./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`)
+        const rl = readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        });
 
-    renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
-        res.send(imageDatas)
-    }).catch((error) => {
-        console.log(error)
-        res.status(500).send(error.message)
+        const clusterIndices: number[] = Array.from({length: numberOfLines}).fill(-1) as number[]
+        let lineNumber = -2
+        rl.on('line', (rawLine) => {
+            lineNumber++
+            if (lineNumber === -1) return
+
+            const clusterIndex = rawLine.split(',')[k - 1]
+            clusterIndices[lineNumber] = parseInt(clusterIndex)
+        })
+
+        rl.on('close', () => {
+            renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
+                res.send(imageDatas)
+            }).catch((error) => {
+                console.log(error)
+                res.status(500).send(error.message)
+            })
+        })
+
+        rl.on('error', (error) => {
+            res.status(500).send(error.message)
+        })
     })
+
 });
 
 /**

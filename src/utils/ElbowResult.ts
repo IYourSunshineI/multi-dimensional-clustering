@@ -1,9 +1,8 @@
 /**
  * Util interface for the result, that the cluster function returns.
  */
-export interface ClusterResult {
+export interface ElbowResult {
     attributeNames: string[],
-    clusterIndices: number[][],
     wcss: number[],
     k: number[]
 }
@@ -11,7 +10,7 @@ export interface ClusterResult {
 /**
  * Util interface for the result, that the worker cluster function returns.
  */
-export interface WorkerClusterResult {
+export interface WorkerElbowResult {
     clusterIndices: number[],
     wcss: number,
     k: number
