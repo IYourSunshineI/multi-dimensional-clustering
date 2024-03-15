@@ -8,6 +8,7 @@ const attributeSelectionVerifyButton = document.getElementById('attributeSelecti
 
 const kInput = document.getElementById('kNumberInput') as HTMLInputElement
 const maxIterationsInput = document.getElementById('IterNumberInput') as HTMLInputElement
+const batchSizeInput = document.getElementById('BatchSizeInput') as HTMLInputElement
 
 startButton.addEventListener('click', () => {
     if (fileSelector.value) {
@@ -24,8 +25,10 @@ attributeSelectionVerifyButton.addEventListener('click', () => {
     kInput.value = k.toString()
     const maxIter = clamp(maxIterationsInput.valueAsNumber, 1, 10000)
     maxIterationsInput.value = maxIter.toString()
+    const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
+    batchSizeInput.value = batchSize.toString()
 
-    verifyClustering(k, maxIter)
+    verifyClustering(k, maxIter, batchSize)
 })
 
 kInput.addEventListener('change', () => {

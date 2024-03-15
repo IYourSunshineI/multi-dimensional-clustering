@@ -1,14 +1,13 @@
-import * as d3 from "d3"
 import * as fs from "fs";
 import * as readline from "readline";
 
 /**
- * This function is used to get the attributes of the dataset.
+ * This function is used to get all attributes of the dataset.
  *
  * @param filename The name of the file to get the attributes from
  * @returns The attributes of the dataset
  */
-export async function getAttributes(filename: string) {
+export async function getAllAttributes(filename: string): Promise<string[]> {
     console.time('getAttributes')
     const path = `./public/datasets/${filename}.csv`;
     const fileStream = fs.createReadStream(path);
@@ -34,46 +33,43 @@ export async function getAttributes(filename: string) {
     })
 }
 
-/**
- * This function is used to parse the csv file, only taking the attributes corresponding to the given {@link selectedAttributeIndices}
- * into account and normalize the data.
- *
- * @param filename The name of the file to parse
- * @param selectedAttributeIndices The indices of the attributes to parse
- * @returns The attributes and the normalized data
- */
-export async function parseData(filename: string, selectedAttributeIndices: number[]) {
-    const fileContent = fs.readFileSync('./public/datasets/' + filename + '.csv', 'utf-8')
-    console.time('parseData')
-    const data = d3.csvParse(fileContent)
-    const attributes = data.columns.map((_, i) => selectedAttributeIndices.includes(i) ? data.columns[i] : null)
-        .filter(attr => attr !== null) as string[]
-
-    const parsedData = data.map(d => attributes.map(attr => {
-        const parsed = parseFloat(d[attr])
-        if(isNaN(parsed)) return d[attr]
-        else return parsed
-    }))
-    console.timeEnd('parseData')
-    const normalizedData = normalizeData(attributes, parsedData)
-    return {attributes, data: normalizedData}
+export async function getAttributes(filename: string, indices: number[]): Promise<string[]> {
+    const attributes = await getAllAttributes(filename)
+    return indices.map((index) => attributes[index])
 }
 
+
+
 /**
- * This function normalizes the data, so the clustering process can
- * produce resonable results.
+ * Get the number of lines in a file
+ * (not including the first line, which is assumed to be the header)
  *
- * @param attributes The attributes of the dataset
- * @param data The data of the dataset
+ * @param path The path to the file
+ * @returns The number of lines in the file
  */
-function normalizeData(attributes: string[], data: any[][]) {
-    console.time('normalizeData')
-    const columns = attributes.map((_, i) => data.map(d => d[i]))
-    const minmax = columns.map(d => d3.extent(d))
-    data = data.map(d => d.map((val, i) => {
-        if(minmax[i][1] === minmax[i][0] || minmax[i][0] === Infinity || minmax[i][1] === Infinity) return 0
-        return (val - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
-    }))
-    console.timeEnd('normalizeData')
-    return data
+export async function getNumberOfLines(path: string) {
+    const fileStream = fs.createReadStream(path)
+    const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+    })
+
+    let lineNumber = -1
+    rl.on('line', () => {
+        lineNumber++
+    })
+
+    return new Promise<number>((resolve, reject) => {
+        rl.on('close', () => {
+            rl.close()
+            fileStream.close()
+            resolve(lineNumber)
+        })
+
+        rl.on('error', (err) => {
+            rl.close()
+            fileStream.close()
+            reject(err)
+        })
+    })
 }
