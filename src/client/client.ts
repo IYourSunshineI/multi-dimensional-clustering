@@ -16,7 +16,6 @@ const timelineDomObj = document.getElementById('timeline') as HTMLElement
 const scattermatrixDomObj = document.getElementById('scatterMatrix') as HTMLElement
 const attributeSelectorDomObj = document.getElementById('attributeSelector') as HTMLElement
 const attributesToClusterDomObj = document.getElementById('attributesToCluster') as HTMLElement
-const timeattributesDomObj = document.getElementById('timeattribute') as HTMLElement
 const timeSpanDropdown = document.getElementById('timeSpanSelect') as HTMLSelectElement
 
 let elbow: Scatterplot
@@ -79,13 +78,12 @@ export async function attributeSelector(filename: string): Promise<void> {
     }
 
     attributeSelection = new Map<number, boolean>()
-    resetAttributeSelector()
+    attributesToClusterDomObj.innerHTML = ''
     currentFileName = filename
     //parse data
     getAttributes(filename).then((attributes: string[]) => {
         attributes.forEach((attr, index) => {
-            attributesToClusterDomObj.append(createCheckbox(attr, index, true))
-            timeattributesDomObj.append(createCheckbox(attr, index, false))
+            attributesToClusterDomObj.append(createCheckbox(attr, index))
         })
         attributeSelectorDomObj.hidden = false
     })
@@ -169,31 +167,18 @@ export async function updateTimeline(timeSpan: number, k: number) {
 }
 
 /**
- * This function hides the attribute selector and clears the checkboxes.
- */
-function resetAttributeSelector() {
-    attributesToClusterDomObj.innerHTML = ''
-    timeattributesDomObj.innerHTML = ''
-}
-
-/**
  * This function creates a checkbox for the attribute selection.
  *
  * @param attribute the name of the attribute
  * @param index the index of the attribute
- * @param forClustering whether the checkbox is for clustering or not
  */
-function createCheckbox(attribute: string, index: number, forClustering: boolean): HTMLDivElement {
+function createCheckbox(attribute: string, index: number): HTMLDivElement {
     const div = document.createElement('div')
     const input = document.createElement('input')
-    if (forClustering) {
-        input.id = 'att_' + index
-        input.name = 'att_' + attribute
-        attributeSelection.set(index, false)
-        input.addEventListener('change', (event) => callback(event.target as HTMLInputElement))
-    } else {
-        input.id = 'time_' + attribute
-    }
+    input.id = 'att_' + index
+    input.name = 'att_' + attribute
+    attributeSelection.set(index, false)
+    input.addEventListener('change', (event) => callback(event.target as HTMLInputElement))
     input.type = 'checkbox'
     const label = document.createElement('label')
     label.htmlFor = input.id
