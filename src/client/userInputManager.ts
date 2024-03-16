@@ -38,6 +38,16 @@ kInput.addEventListener('change', () => {
     updatePresentation(k)
 })
 
+maxIterationsInput.addEventListener('change', () => {
+    const maxIter = clamp(maxIterationsInput.valueAsNumber, 1, 10000)
+    maxIterationsInput.value = maxIter.toString()
+})
+
+batchSizeInput.addEventListener('change', () => {
+    const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
+    batchSizeInput.value = batchSize.toString()
+})
+
 /**
  * This function clamps a number between a minimum and a maximum value.
  *
