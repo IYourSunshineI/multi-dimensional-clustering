@@ -1,6 +1,7 @@
-import {attributeSelector, cancelClustering, updatePresentation, verifyClustering} from "./client.ts";
+import {attributeSelector, cancelClustering, updateScatterMatrix, updateTimeline, verifyClustering} from "./client.ts";
 
 const fileSelector = document.getElementById('filesSelect') as HTMLSelectElement
+const timeSpanSelector = document.getElementById('timeSpanSelect') as HTMLSelectElement
 const startButton = document.getElementById('startButton') as HTMLButtonElement
 
 const attributeSelectionCancelButton = document.getElementById('attributeSelectionCancel') as HTMLButtonElement
@@ -35,7 +36,8 @@ kInput.addEventListener('change', () => {
     const k = clamp(kInput.valueAsNumber, 1, 10)
     kInput.value = k.toString()
 
-    updatePresentation(k)
+    updateScatterMatrix(k)
+    updateTimeline(parseInt(timeSpanSelector.value), k)
 })
 
 maxIterationsInput.addEventListener('change', () => {
@@ -46,6 +48,10 @@ maxIterationsInput.addEventListener('change', () => {
 batchSizeInput.addEventListener('change', () => {
     const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
     batchSizeInput.value = batchSize.toString()
+})
+
+timeSpanSelector.addEventListener('change', () => {
+    updateTimeline(parseInt(timeSpanSelector.value), kInput.valueAsNumber)
 })
 
 /**

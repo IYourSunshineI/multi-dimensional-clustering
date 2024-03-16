@@ -178,6 +178,10 @@ app.get("/render", (req, res) => {
  */
 app.get("/timeline", (req, res) => {
     const filename = req.query.filename as string
+    if(!filename) {
+        res.status(400).send('No filename provided')
+        return
+    }
     const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
         .split(',')
         .map((index) => parseInt(index))

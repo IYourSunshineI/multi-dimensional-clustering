@@ -17,6 +17,7 @@ const scattermatrixDomObj = document.getElementById('scatterMatrix') as HTMLElem
 const attributeSelectorDomObj = document.getElementById('attributeSelector') as HTMLElement
 const attributesToClusterDomObj = document.getElementById('attributesToCluster') as HTMLElement
 const timeattributesDomObj = document.getElementById('timeattribute') as HTMLElement
+const timeSpanDropdown = document.getElementById('timeSpanSelect') as HTMLSelectElement
 
 let elbow: Scatterplot
 let timeline: BarChart
@@ -53,6 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
             dropdown.append(option)
         })
     })
+
+    //populate dropdown with TimeSpans
+    for (const key in TimeSpan) {
+        if (!isNaN(Number(key))) {
+            const option = document.createElement('option')
+            option.value = key
+            option.textContent = TimeSpan[key]
+            timeSpanDropdown.append(option)
+        }
+    }
 })
 
 /**
@@ -127,26 +138,33 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
         })
         elbow.update(elbowData.slice(1))
 
-        updatePresentation(k)
+        updateScatterMatrix(k)
+        updateTimeline(parseInt(timeSpanDropdown.value), k)
     })
 }
 
 /**
- * This function updates the graphs with the new clustering result and the given k.
+ * This function updates the scatter matrix with the new clustering result and the given k.
  *
  * @param k The number of clusters used for the clustering
  */
-export async function updatePresentation(k: number) {
+export async function updateScatterMatrix(k: number) {
     if (!currentElbowResult) return
-
     //render
     const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, k, scattermatrix.width, scattermatrix.height)
-
     //scattermatrix
     scattermatrix.update(imageData, currentElbowResult.attributeNames)
+}
 
+/**
+ * This function updates the timeline with the new clustering result and the given time span.
+ *
+ * @param timeSpan The time span to be used for the timeline
+ * @param k The number of clusters used for the clustering
+ */
+export async function updateTimeline(timeSpan: number, k: number) {
     //timeline
-    const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, k, TimeSpan.HOUR)
+    const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, k, timeSpan)
     timeline.update(timeLineData)
 }
 

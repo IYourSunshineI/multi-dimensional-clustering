@@ -4,6 +4,6 @@
 export enum TimeSpan {
     DAY,
     HOUR,
-    MINUTE,
-    SECOND
+    //MINUTE,
+    //SECOND
 }
