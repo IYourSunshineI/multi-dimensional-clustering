@@ -10,6 +10,7 @@ import {startKmeansForElbow} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
 import {renderScatterCanvases} from "./renderer.js";
 import * as readline from "readline";
+import {calculateTimeline} from "./timeline.js";
 
 const app = express();
 const ttl = 60 * 60 //1h
@@ -78,13 +79,13 @@ app.get("/cluster", (req, res) => {
     const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
 
     const cachedValue = getAndResetTTL(clusterKey) as ElbowResult
-    if(cachedValue) {
+    if (cachedValue) {
         //cache hit
         res.send(cachedValue)
         return
     }
 
-    if(!fs.existsSync(`./public/datasets_normalized/${filename}.csv`)) {
+    if (!fs.existsSync(`./public/datasets_normalized/${filename}.csv`)) {
         normalizeData(filename).then(() => {
             startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
                 getAttributes(filename, selectedAttributeIndices).then((attributes) => {
@@ -165,6 +166,40 @@ app.get("/render", (req, res) => {
     })
 
 });
+
+/**
+ * Endpoint to get the timeline data.
+ *
+ * @param filename The name of the file to get the timeline from
+ * @param selectedAttributeIndices The indices of the selected attributes
+ * @param k The number of clusters
+ * @param timeSpan The time span (if eg. day is selected the timeline will be grouped by day)
+ * @returns The timeline data
+ */
+app.get("/timeline", (req, res) => {
+    const filename = req.query.filename as string
+    const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
+        .split(',')
+        .map((index) => parseInt(index))
+    const k = parseInt(req.query.k as string)
+    const timeSpan = parseInt(req.query.timeSpan as string)
+
+    getAllAttributes(filename).then((attributes) => {
+        const timeStampIndex = attributes.findIndex((attribute) => attribute.toLowerCase().includes('time'))
+        if (timeStampIndex === -1) {
+            res.status(500).send('No time attribute found')
+            return
+        }
+
+        calculateTimeline(`./public/datasets/${filename}.csv`,
+            `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`, k, timeStampIndex, timeSpan)
+            .then((timeline) => {
+                res.send(timeline)
+            }).catch((error) => {
+            res.status(500).send(error.message)
+        })
+    })
+})
 
 /**
  * This function gets the value from the cache and resets the TTL

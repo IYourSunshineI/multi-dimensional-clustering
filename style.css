@@ -85,6 +85,10 @@ body, html {
     }
 }
 
+.timeline {
+    margin-bottom: 40px;
+}
+
 .control-elements {
     align-self: end;
     display: flex;

@@ -1,5 +1,7 @@
 import {ElbowResult} from "../utils/ElbowResult.ts";
 import {FakeImageData} from "../utils/RenderResult.js";
+import {TimeSpan} from "../utils/TimeSpan.js";
+import {TimeDataGroup} from "../utils/TimeDataGroup.js";
 
 
 /**
@@ -13,9 +15,9 @@ export async function getFilenames(): Promise<string[]> {
     xhr.send()
 
     return new Promise((resolve, reject) => {
-        xhr.onreadystatechange = function() {
-            if(xhr.readyState == XMLHttpRequest.DONE) {
-                if(xhr.status === 200) {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
                     resolve(JSON.parse(xhr.responseText))
                 } else {
                     reject(xhr.responseText)
@@ -39,9 +41,9 @@ export async function cluster(filename: string, selectedAttributeIndices: number
     xhr.send()
 
     return new Promise((resolve, reject) => {
-        xhr.onreadystatechange = function() {
-            if(xhr.readyState == XMLHttpRequest.DONE) {
-                if(xhr.status === 200) {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
                     resolve(JSON.parse(xhr.responseText))
                 } else {
                     reject(xhr.responseText)
@@ -66,9 +68,35 @@ export async function render(filename: string, selectedAttributeIndices: number[
     xhr.send()
 
     return new Promise((resolve, reject) => {
-        xhr.onreadystatechange = function() {
-            if(xhr.readyState == XMLHttpRequest.DONE) {
-                if(xhr.status === 200) {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText))
+                } else {
+                    reject(xhr.responseText)
+                }
+            }
+        }
+    })
+}
+
+/**
+ * This function calls the server to get the timeline of the data.
+ *
+ * @param filename the name of the file to get the timeline from
+ * @param selectedAttributeIndices the indices of the selected attributes
+ * @param k the number of clusters
+ * @param timeSpan the time span (if eg. day is selected the timeline will be grouped by day)
+ */
+export async function getTimeline(filename: string, selectedAttributeIndices: number[], k: number, timeSpan: TimeSpan): Promise<TimeDataGroup[]> {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', `/timeline?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&k=${k}&timeSpan=${timeSpan}`, true)
+    xhr.send()
+
+    return new Promise((resolve, reject) => {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
                     resolve(JSON.parse(xhr.responseText))
                 } else {
                     reject(xhr.responseText)
@@ -84,15 +112,15 @@ export async function render(filename: string, selectedAttributeIndices: number[
  * @param filename The name of the file to get the attributes from
  * @returns The attributes of the dataset
  */
-export async function getAttributes(filename: string) : Promise<string[]> {
+export async function getAttributes(filename: string): Promise<string[]> {
     const xhr = new XMLHttpRequest()
     xhr.open('GET', `/attributes?filename=${filename}`, true)
     xhr.send()
 
     return new Promise((resolve, reject) => {
-        xhr.onreadystatechange = function() {
-            if(xhr.readyState == XMLHttpRequest.DONE) {
-                if(xhr.status === 200) {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
                     resolve(JSON.parse(xhr.responseText))
                 } else {
                     reject(xhr.responseText)

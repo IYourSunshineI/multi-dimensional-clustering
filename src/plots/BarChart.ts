@@ -68,22 +68,24 @@ export class BarChart {
             .domain(data.map(value => value.timestamp))
             .range([this.margin, this.width - this.margin])
 
+        const maxCount = data.reduce((max, value) => Math.max(max, value.countPerCluster.reduce((a, b) => a + b, 0)), 0)
+
         const yScale = d3.scaleLinear()
-            .domain([0,
-                //takes the first timestamp and sums up all the counts (since we are not losing datapoints from one day to the other)
-                data[0].countPerCluster.reduce((a, b) => a + b, 0)])
+            .domain([0, maxCount])
             .range([this.height - this.margin, this.margin])
 
         this.addAxis(this.svg, xScale, yScale)
 
+        const domainArr = Array.from({length: data[0].countPerCluster.length}).map((_, index) => index.toString())
+
         const color = d3.scaleOrdinal()
-            .domain(['0', data[0].countPerCluster.length.toString()])
+            .domain(domainArr)
             .range(colors)
 
         const stackedData = d3.stack()
             // @ts-ignore
             //takes the clusterIndices as keys (all datapoints have the same amount of clusters)
-            .keys(data[0].countPerCluster.map((value, index) => index))
+            .keys(data[0].countPerCluster.map((value, index) => index.toString()))
             // @ts-ignore
             (data.map(value => value.countPerCluster))
 
@@ -117,6 +119,7 @@ export class BarChart {
             .attr('height', this.height)
             .attr("viewBox", [0, 0, this.width, this.height])
             .attr("style", "max-width: 100%; height: auto;")
+            .style('overflow', 'visible')
         if(!svg) {
             console.error('svg could not be created')
             return null
@@ -136,6 +139,9 @@ export class BarChart {
             .attr('transform', `translate(0, ${this.height - this.margin})`)
             .call(d3.axisBottom(xScale))
             .call(g => g.select('.domain').remove())
+            .selectAll('text')
+            .attr('text-anchor', 'start')
+            .attr('transform', 'translate(0, 0)rotate(45)')
 
         svg.append('g')
             .attr('transform', `translate(${this.margin}, 0)`)

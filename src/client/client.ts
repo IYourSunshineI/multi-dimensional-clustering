@@ -6,9 +6,10 @@
 import {BarChart} from "../plots/BarChart.ts";
 import {Scatterplot} from "../plots/Scatterplot.ts";
 import {ScatterMatrix} from "../plots/ScatterMatrix.ts";
-import {getAttributes, cluster, getFilenames, render} from "./backendService.ts";
+import {cluster, getAttributes, getFilenames, getTimeline, render} from "./backendService.ts";
 import {ElbowResult} from "../utils/ElbowResult.js";
 import {FakeImageData} from "../utils/RenderResult.js";
+import {TimeSpan} from "../utils/TimeSpan.js";
 
 const elbowDomObj = document.getElementById('elbow') as HTMLElement
 const timelineDomObj = document.getElementById('timeline') as HTMLElement
@@ -145,17 +146,8 @@ export async function updatePresentation(k: number) {
     scattermatrix.update(imageData, currentElbowResult.attributeNames)
 
     //timeline
-    //TODO: implement timeline
-    const dummyTimeData = [
-        {countPerCluster: [1, 2, 1, 6], timestamp: 'March 1, 2020'},
-        {countPerCluster: [1, 1, 2, 6], timestamp: 'March 2, 2020'},
-        {countPerCluster: [2, 2, 2, 4], timestamp: 'March 3, 2020'},
-        {countPerCluster: [2, 3, 1, 4], timestamp: 'March 4, 2020'},
-        {countPerCluster: [5, 2, 0, 3], timestamp: 'March 5, 2020'},
-        {countPerCluster: [4, 1, 2, 3], timestamp: 'March 6, 2020'},
-        {countPerCluster: [2, 2, 2, 4], timestamp: 'March 7, 2020'},
-    ]
-    timeline.update(dummyTimeData)
+    const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, k, TimeSpan.HOUR)
+    timeline.update(timeLineData)
 }
 
 /**
