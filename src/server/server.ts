@@ -4,12 +4,11 @@ import * as path from "path"
 import ViteExpress from "vite-express";
 import bodyparser from "body-parser";
 import NodeCache from "node-cache";
-import {getAllAttributes, getAttributes, getNumberOfLines} from "./data.js";
+import {getAllAttributes, getAttributes} from "./data.js";
 import {ElbowResult} from "../utils/ElbowResult.js";
 import {startKmeansForElbow} from "./online_kmeans.js";
 import {normalizeData} from "../utils/dataNormalizer.js";
 import {renderScatterCanvases} from "./renderer.js";
-import * as readline from "readline";
 import {calculateTimeline} from "./timeline.js";
 
 const app = express();
