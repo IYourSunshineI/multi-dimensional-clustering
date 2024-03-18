@@ -32,8 +32,8 @@ export async function renderScatterCanvases(path: string, clusterResultPath: str
     console.time('render')
 
     const margin = 15
-    const cellWidth = (width - (selectedAttributeIndices.length + 1) * margin) / selectedAttributeIndices.length + margin
-    const cellHeight = (height - (selectedAttributeIndices.length + 1) * margin) / selectedAttributeIndices.length + margin
+    const cellWidth = Math.trunc((width - (selectedAttributeIndices.length + 1) * margin) / selectedAttributeIndices.length + margin)
+    const cellHeight = Math.trunc((height - (selectedAttributeIndices.length + 1) * margin) / selectedAttributeIndices.length + margin)
 
     const cellAttributes: number[][] = []
     for (let att1 = 0; att1 < selectedAttributeIndices.length; att1++) {
@@ -92,15 +92,16 @@ export async function renderScatterCanvases(path: string, clusterResultPath: str
  * @param cellHeight the height of the cell
  */
 async function render(path: string, clusterResultPath: string, selectedAttributeIndices: number[], k: number, margin: number, cellWidth: number, cellHeight: number) {
+    console.time('worker')
     const xScale = d3.scaleLinear().domain([0, 1]).range([margin / 2, cellWidth - margin / 2])
     const yScale = d3.scaleLinear().domain([0, 1]).range([cellHeight - margin / 2, margin / 2])
 
     const pointSize = 2
     const imageData: FakeImageData = {
-        data: Array.from({length: 1080 * 1080 * 4}).fill(0) as number[],
+        data: Array.from({length: cellWidth * cellHeight * 4}).fill(0) as number[],
         colorSpace: 'srgb',
-        width: 1080,
-        height: 1080
+        width: cellWidth,
+        height: cellHeight
     }
 
     const stream = await new StreamCombiner(path, clusterResultPath).getCombinedStream()
@@ -117,7 +118,7 @@ async function render(path: string, clusterResultPath: string, selectedAttribute
         const y = Math.round(yScale(parseFloat(attributes[1])))
         const color = colors[clusterIndex]
 
-        renderAsCircle(imageData, x, y, color, pointSize, 1080, 1080)
+        renderAsCircle(imageData, x, y, color, pointSize, cellWidth, cellHeight)
     })
 
     return new Promise<FakeImageData>((resolve) => {

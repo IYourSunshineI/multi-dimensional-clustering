@@ -125,7 +125,7 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     console.time('serverTime')
     const promise = cluster(currentFileName, indices, maxIterations, batchSize)
     //presentation
-    promise.then((result: ElbowResult) => {
+    promise.then(async (result: ElbowResult) => {
         console.timeEnd('serverTime')
         currentElbowResult = result
 
@@ -136,8 +136,8 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
         })
         elbow.update(elbowData.slice(1))
 
+        await updateTimeline(parseInt(timeSpanDropdown.value), k)
         updateScatterMatrix(k)
-        updateTimeline(parseInt(timeSpanDropdown.value), k)
     })
 }
 
