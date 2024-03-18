@@ -35,12 +35,12 @@ export async function calculateTimeline(filePath: string, clusterResultPath: str
                 case TimeSpan.HOUR:
                     timestamp = timestamp.slice(0, 13).concat(':00')
                     break
-                case TimeSpan.MINUTE:
-                    timestamp = timestamp.slice(0, 16)
-                    break
-                case TimeSpan.SECOND:
-                    timestamp = timestamp.slice(0, 19)
-                    break
+                //case TimeSpan.MINUTE:
+                //    timestamp = timestamp.slice(0, 16)
+                //    break
+                //case TimeSpan.SECOND:
+                //    timestamp = timestamp.slice(0, 19)
+                //    break
                 default:
                     reject(new Error('Invalid time span'))
             }

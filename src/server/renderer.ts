@@ -1,9 +1,8 @@
 import {Worker, parentPort, workerData} from "worker_threads";
 import {RenderResult, FakeImageData} from "../utils/RenderResult.js";
 import * as d3 from "d3";
-import * as fs from "fs";
-import * as readline from "readline";
 import {colors} from "../utils/Colors.js";
+import {StreamCombiner} from "../utils/StreamCombiner.js";
 
 const __filename = new URL(import.meta.url);
 
@@ -12,7 +11,7 @@ const __filename = new URL(import.meta.url);
  * Starts the rendering process in one cell of the scatter matrix.
  */
 parentPort?.on("message", async () => {
-    const imageData = await render(workerData.path, workerData.selectedAttributeIndices, workerData.clusterIndices, workerData.margin, workerData.cellWidth, workerData.cellHeight)
+    const imageData = await render(workerData.path, workerData.clusterResultPath, workerData.selectedAttributeIndices, workerData.k, workerData.margin, workerData.cellWidth, workerData.cellHeight)
     parentPort?.postMessage({
         ImageData: imageData,
         index: workerData.index
@@ -23,12 +22,13 @@ parentPort?.on("message", async () => {
  * This function start one worker for each scatter matrix cell which then renders its cell.
  *
  * @param path the path to the normalized data
+ * @param clusterResultPath the path to the clustering result
  * @param selectedAttributeIndices the indices of the selected attributes
- * @param clusterIndices the indices of the clusters
+ * @param k the number of clusters
  * @param width the width of the canvas
  * @param height the height of the canvas
  */
-export async function renderScatterCanvases(path: string, selectedAttributeIndices: number[], clusterIndices: number[], width: number, height: number) {
+export async function renderScatterCanvases(path: string, clusterResultPath: string, selectedAttributeIndices: number[], k: number, width: number, height: number) {
     console.time('render')
 
     const margin = 15
@@ -48,8 +48,9 @@ export async function renderScatterCanvases(path: string, selectedAttributeIndic
         const worker = new Worker(__filename, {
             workerData: {
                 path,
+                clusterResultPath,
                 selectedAttributeIndices,
-                clusterIndices,
+                k,
                 margin,
                 cellWidth,
                 cellHeight,
@@ -83,13 +84,14 @@ export async function renderScatterCanvases(path: string, selectedAttributeIndic
  * This function renders one cell.
  *
  * @param path the path to the normalized data
+ * @param clusterResultPath the path to the clustering result
  * @param selectedAttributeIndices the indices of the selected attributes (in this case only two)
- * @param clusterIndices the indices of the clusters
+ * @param k the number of clusters
  * @param margin the margin of the canvas
  * @param cellWidth the width of the cell
  * @param cellHeight the height of the cell
  */
-async function render(path: string, selectedAttributeIndices: number[], clusterIndices: number[], margin: number, cellWidth: number, cellHeight: number) {
+async function render(path: string, clusterResultPath: string, selectedAttributeIndices: number[], k: number, margin: number, cellWidth: number, cellHeight: number) {
     const xScale = d3.scaleLinear().domain([0, 1]).range([margin / 2, cellWidth - margin / 2])
     const yScale = d3.scaleLinear().domain([0, 1]).range([cellHeight - margin / 2, margin / 2])
 
@@ -101,32 +103,25 @@ async function render(path: string, selectedAttributeIndices: number[], clusterI
         height: 1080
     }
 
-    const fileStream = fs.createReadStream(path)
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-    })
-
+    const stream = await new StreamCombiner(path, clusterResultPath).getCombinedStream()
     let lineNumber = -2
-    rl.on('line', (rawLine) => {
+    stream.on('line', (rawLine: string) => {
         lineNumber++
         if (lineNumber === -1) return
 
-        const data = rawLine.split(',').filter((_, index) => selectedAttributeIndices.includes(index))
-            .map(parseFloat)
-            .filter((value) => !isNaN(value))
+        const data = rawLine.split(',')
+        const attributes = data.filter((_, index) => selectedAttributeIndices.includes(index))
+        const clusterIndex = parseInt(data[data.length - (11 - k)])
 
-        const x = Math.round(xScale(data[0]))
-        const y = Math.round(yScale(data[1]))
-        const color = colors[clusterIndices[lineNumber]]
+        const x = Math.round(xScale(parseFloat(attributes[0])))
+        const y = Math.round(yScale(parseFloat(attributes[1])))
+        const color = colors[clusterIndex]
 
         renderAsCircle(imageData, x, y, color, pointSize, 1080, 1080)
     })
 
     return new Promise<FakeImageData>((resolve) => {
-        rl.on('close', () => {
-            rl.close()
-            fileStream.close()
+        stream.on('close', () => {
             resolve(imageData)
         })
     })

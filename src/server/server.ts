@@ -134,37 +134,14 @@ app.get("/render", (req, res) => {
     const width = req.query.width as unknown as number
     const height = req.query.height as unknown as number
 
-    getNumberOfLines(`./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`).then((numberOfLines) => {
-        const fileStream = fs.createReadStream(`./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`)
-        const rl = readline.createInterface({
-            input: fileStream,
-            crlfDelay: Infinity
-        });
-
-        const clusterIndices: number[] = Array.from({length: numberOfLines}).fill(-1) as number[]
-        let lineNumber = -2
-        rl.on('line', (rawLine) => {
-            lineNumber++
-            if (lineNumber === -1) return
-
-            const clusterIndex = rawLine.split(',')[k - 1]
-            clusterIndices[lineNumber] = parseInt(clusterIndex)
-        })
-
-        rl.on('close', () => {
-            renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, clusterIndices, width, height).then((imageDatas) => {
-                res.send(imageDatas)
-            }).catch((error) => {
-                console.log(error)
-                res.status(500).send(error.message)
-            })
-        })
-
-        rl.on('error', (error) => {
-            res.status(500).send(error.message)
-        })
+    renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`,
+        `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`,
+        selectedAttributeIndices, k, width, height).then((imageDatas) => {
+        res.send(imageDatas)
+    }).catch((error) => {
+        console.log(error)
+        res.status(500).send(error.message)
     })
-
 });
 
 /**
@@ -178,7 +155,7 @@ app.get("/render", (req, res) => {
  */
 app.get("/timeline", (req, res) => {
     const filename = req.query.filename as string
-    if(!filename) {
+    if (!filename) {
         res.status(400).send('No filename provided')
         return
     }
