@@ -67,7 +67,7 @@ app.get("/attributes", (req, res) => {
  * @param selectedAttributeIndices The indices of the attributes to cluster on
  * @param maxIterations The maximum number of iterations for the k-means algorithm
  */
-app.get("/cluster", (req, res) => {
+app.get("/cluster", async (req, res) => {
     const filename = req.query.filename as string
     const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
         .split(',')
@@ -75,42 +75,39 @@ app.get("/cluster", (req, res) => {
     const maxIterations = req.query.maxIterations as unknown as number
     const batchSize = req.query.batchSize as unknown as number
 
-    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}-${batchSize}`
-
-    const cachedValue = getAndResetTTL(clusterKey) as ElbowResult
-    if (cachedValue) {
-        //cache hit
-        res.send(cachedValue)
+    const elbowResultPath = `./public/clusterWcssResults/${filename}_wcss_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    if (fs.existsSync(elbowResultPath)) {
+        const elbowResult = JSON.parse(fs.readFileSync(elbowResultPath, 'utf8'))
+        res.send(elbowResult)
         return
     }
 
     if (!fs.existsSync(`./public/datasets_normalized/${filename}.csv`)) {
-        normalizeData(filename).then(() => {
-            startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
-                getAttributes(filename, selectedAttributeIndices).then((attributes) => {
-                    const result: ElbowResult = {
-                        attributeNames: attributes,
-                        wcss: clusterResult.wcss,
-                        k: clusterResult.k
-                    }
-                    cache.set(clusterKey, result, ttl)
-                    res.send(result)
-                })
+        await normalizeData(filename)
+    }
+
+    startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
+        getAttributes(filename, selectedAttributeIndices).then((attributes) => {
+            const result: ElbowResult = {
+                attributeNames: attributes,
+                wcss: clusterResult.wcss,
+                k: clusterResult.k
+            }
+
+            const writeStream = fs.createWriteStream(elbowResultPath)
+            writeStream.write(JSON.stringify(result))
+            writeStream.end()
+
+            writeStream.on('error', (error) => {
+                console.error(error.message)
+                res.status(500).send(error.message)
             })
-        })
-    } else {
-        startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
-            getAttributes(filename, selectedAttributeIndices).then((attributes) => {
-                const result: ElbowResult = {
-                    attributeNames: attributes,
-                    wcss: clusterResult.wcss,
-                    k: clusterResult.k
-                }
-                cache.set(clusterKey, result, ttl)
+
+            writeStream.on('finish', () => {
                 res.send(result)
             })
         })
-    }
+    })
 });
 
 
@@ -138,7 +135,7 @@ app.get("/render", (req, res) => {
     const height = req.query.height as unknown as number
 
     const renderResultPath = `./public/renderResults/${filename}_scatterMatrix_k=${k}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
-    if(fs.existsSync(renderResultPath)) {
+    if (fs.existsSync(renderResultPath)) {
         const imageDatas = JSON.parse(fs.readFileSync(renderResultPath, 'utf8'))
         res.send(imageDatas)
         return
@@ -153,8 +150,8 @@ app.get("/render", (req, res) => {
         writeStream.end()
 
         writeStream.on('error', (error) => {
-          console.error(error.message)
-          res.status(500).send(error.message)
+            console.error(error.message)
+            res.status(500).send(error.message)
         })
 
         writeStream.on('finish', () => {
@@ -192,7 +189,7 @@ app.get("/timeline", (req, res) => {
     const timeSpan = parseInt(req.query.timeSpan as string)
 
     const timelinePath = `./public/timelineResults/${filename}_timeline_k=${k}_timespan=${timeSpan}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
-    if(fs.existsSync(timelinePath)) {
+    if (fs.existsSync(timelinePath)) {
         const timeline = JSON.parse(fs.readFileSync(timelinePath, 'utf8'))
         res.send(timeline)
         return
