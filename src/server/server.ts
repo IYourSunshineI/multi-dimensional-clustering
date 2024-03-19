@@ -146,7 +146,7 @@ app.get("/render", (req, res) => {
 
 
     renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`,
-        `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
+        `./public/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
         selectedAttributeIndices, k, width, height).then((imageDatas) => {
         const writeStream = fs.createWriteStream(renderResultPath)
         writeStream.write(JSON.stringify(imageDatas))
@@ -206,7 +206,7 @@ app.get("/timeline", (req, res) => {
         }
 
         calculateTimeline(`./public/datasets/${filename}.csv`,
-            `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
+            `./public/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
             .then((timeline) => {
                 const writeStream = fs.createWriteStream(timelinePath)
                 writeStream.write(JSON.stringify(timeline))

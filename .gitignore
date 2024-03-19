@@ -15,8 +15,8 @@ dist-ssr
 /public/logo.xcf
 /public/datasets_normalized/*
 !/public/datasets_normalized/info.md
-/public/clusterResults/*
-!/public/clusterResults/info.md
+/public/clusterIndexResults/*
+!/public/clusterIndexResults/info.md
 /public/renderResults/*
 !/public/renderResults/info.md
 /public/timelineResults/*
