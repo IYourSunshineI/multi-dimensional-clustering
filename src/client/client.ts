@@ -136,8 +136,8 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
         })
         elbow.update(elbowData.slice(1))
 
-        await updateTimeline(parseInt(timeSpanDropdown.value), k)
-        updateScatterMatrix(k)
+        await updateTimeline(parseInt(timeSpanDropdown.value), k, maxIterations, batchSize)
+        updateScatterMatrix(k, maxIterations, batchSize)
     })
 }
 
@@ -145,11 +145,13 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
  * This function updates the scatter matrix with the new clustering result and the given k.
  *
  * @param k The number of clusters used for the clustering
+ * @param maxIterations The maximum number of iterations for the clustering algorithm
+ * @param batchSize The size of the batch to use for the clustering algorithm
  */
-export async function updateScatterMatrix(k: number) {
+export async function updateScatterMatrix(k: number, maxIterations: number, batchSize: number) {
     if (!currentElbowResult) return
     //render
-    const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, k, scattermatrix.width, scattermatrix.height)
+    const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, maxIterations, batchSize, k, scattermatrix.width, scattermatrix.height)
     //scattermatrix
     scattermatrix.update(imageData, currentElbowResult.attributeNames)
 }
@@ -159,10 +161,12 @@ export async function updateScatterMatrix(k: number) {
  *
  * @param timeSpan The time span to be used for the timeline
  * @param k The number of clusters used for the clustering
+ * @param maxIterations The maximum number of iterations for the clustering algorithm
+ * @param batchSize The size of the batch to use for the clustering algorithm
  */
-export async function updateTimeline(timeSpan: number, k: number) {
+export async function updateTimeline(timeSpan: number, k: number, maxIterations: number, batchSize: number) {
     //timeline
-    const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, k, timeSpan)
+    const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, maxIterations, batchSize, k, timeSpan)
     timeline.update(timeLineData)
 }
 

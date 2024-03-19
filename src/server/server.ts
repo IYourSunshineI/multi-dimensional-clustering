@@ -12,7 +12,7 @@ import {renderScatterCanvases} from "./renderer.js";
 import {calculateTimeline} from "./timeline.js";
 
 const app = express();
-const ttl = 60 * 60 //1h
+const ttl = 60 * 30 //.5h
 const cache = new NodeCache({stdTTL: ttl})
 
 app.use(bodyparser.json({limit: "500mb"}));
@@ -75,7 +75,7 @@ app.get("/cluster", (req, res) => {
     const maxIterations = req.query.maxIterations as unknown as number
     const batchSize = req.query.batchSize as unknown as number
 
-    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}`
+    const clusterKey = `cluster-${filename}-${selectedAttributeIndices}-${maxIterations}-${batchSize}`
 
     const cachedValue = getAndResetTTL(clusterKey) as ElbowResult
     if (cachedValue) {
@@ -119,6 +119,8 @@ app.get("/cluster", (req, res) => {
  *
  * @param filename The name of the file to render
  * @param selectedAttributeIndices The indices of the attributes to render
+ * @param maxIterations The maximum number of iterations for the k-means algorithm
+ * @param batchSize The size of the batch to use for the k-means algorithm
  * @param k The number of clusters
  * @param width The width of the canvas
  * @param height The height of the canvas
@@ -129,12 +131,14 @@ app.get("/render", (req, res) => {
     const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
         .split(',')
         .map((index) => parseInt(index))
+    const maxIterations = parseInt(req.query.maxIterations as string)
+    const batchSize = parseInt(req.query.batchSize as string)
     const k = req.query.k as unknown as number
     const width = req.query.width as unknown as number
     const height = req.query.height as unknown as number
 
     renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`,
-        `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`,
+        `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
         selectedAttributeIndices, k, width, height).then((imageDatas) => {
         res.send(imageDatas)
     }).catch((error) => {
@@ -148,8 +152,10 @@ app.get("/render", (req, res) => {
  *
  * @param filename The name of the file to get the timeline from
  * @param selectedAttributeIndices The indices of the selected attributes
+ * @param maxIterations The maximum number of iterations for the k-means algorithm
+ * @param batchSize The size of the batch to use for the k-means algorithm
  * @param k The number of clusters
- * @param timeSpan The time span (if eg. day is selected the timeline will be grouped by day)
+ * @param timeSpan The time span (if e.g. day is selected the timeline will be grouped by day)
  * @returns The timeline data
  */
 app.get("/timeline", (req, res) => {
@@ -161,6 +167,8 @@ app.get("/timeline", (req, res) => {
     const selectedAttributeIndices = (req.query.selectedAttributeIndices as string)
         .split(',')
         .map((index) => parseInt(index))
+    const maxIterations = parseInt(req.query.maxIterations as string)
+    const batchSize = parseInt(req.query.batchSize as string)
     const k = parseInt(req.query.k as string)
     const timeSpan = parseInt(req.query.timeSpan as string)
 
@@ -172,7 +180,7 @@ app.get("/timeline", (req, res) => {
         }
 
         calculateTimeline(`./public/datasets/${filename}.csv`,
-            `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`, k, timeStampIndex, timeSpan)
+            `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
             .then((timeline) => {
                 res.send(timeline)
             }).catch((error) => {

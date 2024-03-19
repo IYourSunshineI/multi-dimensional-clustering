@@ -72,7 +72,7 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
 
             console.time('persistClusterIndices')
             const writeStream = fs.createWriteStream(
-                `./public/clusterResults/${path.split('/').pop()?.slice(0, -4)}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}.csv`)
+                `./public/clusterResults/${path.split('/').pop()?.slice(0, -4)}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`)
             writeStream.write(`${clusterResult.k.join(',')}\n`)
             for(let i = 0; i < clusterIndices[0].length; i++) {
                 writeStream.write(`${clusterIndices.map(value => value[i])}\n`)

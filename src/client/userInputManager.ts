@@ -35,9 +35,13 @@ attributeSelectionVerifyButton.addEventListener('click', () => {
 kInput.addEventListener('change', () => {
     const k = clamp(kInput.valueAsNumber, 1, 10)
     kInput.value = k.toString()
+    const maxIter = clamp(maxIterationsInput.valueAsNumber, 1, Infinity)
+    maxIterationsInput.value = maxIter.toString()
+    const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
+    batchSizeInput.value = batchSize.toString()
 
-    updateScatterMatrix(k)
-    updateTimeline(parseInt(timeSpanSelector.value), k)
+    updateScatterMatrix(k, maxIter, batchSize)
+    updateTimeline(parseInt(timeSpanSelector.value), k, maxIter, batchSize)
 })
 
 maxIterationsInput.addEventListener('change', () => {
@@ -51,7 +55,7 @@ batchSizeInput.addEventListener('change', () => {
 })
 
 timeSpanSelector.addEventListener('change', () => {
-    updateTimeline(parseInt(timeSpanSelector.value), kInput.valueAsNumber)
+    updateTimeline(parseInt(timeSpanSelector.value), kInput.valueAsNumber, maxIterationsInput.valueAsNumber, batchSizeInput.valueAsNumber)
 })
 
 /**

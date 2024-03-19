@@ -58,13 +58,15 @@ export async function cluster(filename: string, selectedAttributeIndices: number
  *
  * @param filename the name of the file to render
  * @param selectedAttributeIndices the indices of the selected attributes
+ * @param maxIterations the maximum number of iterations for the k-means algorithm
+ * @param batchSize the size of the batch to use for the k-means algorithm
  * @param k the number of clusters
  * @param width the width of the canvas
  * @param height the height of the canvas
  */
-export async function render(filename: string, selectedAttributeIndices: number[], k: number, width: number, height: number): Promise<FakeImageData[]> {
+export async function render(filename: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number, k: number, width: number, height: number): Promise<FakeImageData[]> {
     const xhr = new XMLHttpRequest()
-    xhr.open('GET', `/render?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&k=${k}&width=${width}&height=${height}`, true)
+    xhr.open('GET', `/render?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&maxIterations=${maxIterations}&batchSize=${batchSize}&k=${k}&width=${width}&height=${height}`, true)
     xhr.send()
 
     return new Promise((resolve, reject) => {
@@ -85,12 +87,14 @@ export async function render(filename: string, selectedAttributeIndices: number[
  *
  * @param filename the name of the file to get the timeline from
  * @param selectedAttributeIndices the indices of the selected attributes
+ * @param maxIterations the maximum number of iterations for the k-means algorithm
+ * @param batchSize the size of the batch to use for the k-means algorithm
  * @param k the number of clusters
  * @param timeSpan the time span (if eg. day is selected the timeline will be grouped by day)
  */
-export async function getTimeline(filename: string, selectedAttributeIndices: number[], k: number, timeSpan: TimeSpan): Promise<TimeDataGroup[]> {
+export async function getTimeline(filename: string, selectedAttributeIndices: number[], maxIterations: number, batchSize: number, k: number, timeSpan: TimeSpan): Promise<TimeDataGroup[]> {
     const xhr = new XMLHttpRequest()
-    xhr.open('GET', `/timeline?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&k=${k}&timeSpan=${timeSpan}`, true)
+    xhr.open('GET', `/timeline?filename=${filename}&selectedAttributeIndices=${selectedAttributeIndices}&maxIterations=${maxIterations}&batchSize=${batchSize}&k=${k}&timeSpan=${timeSpan}`, true)
     xhr.send()
 
     return new Promise((resolve, reject) => {
