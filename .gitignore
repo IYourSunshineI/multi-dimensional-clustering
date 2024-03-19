@@ -17,6 +17,8 @@ dist-ssr
 !/public/datasets_normalized/info.md
 /public/clusterResults/*
 !/public/clusterResults/info.md
+/public/renderResults/*
+!/public/renderResults/info.md
 
 # Editor directories and files
 .vscode/*

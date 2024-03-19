@@ -137,10 +137,29 @@ app.get("/render", (req, res) => {
     const width = req.query.width as unknown as number
     const height = req.query.height as unknown as number
 
+    const renderResultPath = `./public/renderResults/${filename}_scatterMatrix_k=${k}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    if(fs.existsSync(renderResultPath)) {
+        const imageDatas = JSON.parse(fs.readFileSync(renderResultPath, 'utf8'))
+        res.send(imageDatas)
+        return
+    }
+
+
     renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`,
         `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
         selectedAttributeIndices, k, width, height).then((imageDatas) => {
-        res.send(imageDatas)
+        const writeStream = fs.createWriteStream(renderResultPath)
+        writeStream.write(JSON.stringify(imageDatas))
+        writeStream.end()
+
+        writeStream.on('error', (error) => {
+          console.error(error.message)
+          res.status(500).send(error.message)
+        })
+
+        writeStream.on('finish', () => {
+            res.send(imageDatas)
+        })
     }).catch((error) => {
         console.log(error)
         res.status(500).send(error.message)
