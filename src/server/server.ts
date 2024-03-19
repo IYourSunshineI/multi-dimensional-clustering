@@ -191,6 +191,13 @@ app.get("/timeline", (req, res) => {
     const k = parseInt(req.query.k as string)
     const timeSpan = parseInt(req.query.timeSpan as string)
 
+    const timelinePath = `./public/timelineResults/${filename}_timeline_k=${k}_timespan=${timeSpan}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    if(fs.existsSync(timelinePath)) {
+        const timeline = JSON.parse(fs.readFileSync(timelinePath, 'utf8'))
+        res.send(timeline)
+        return
+    }
+
     getAllAttributes(filename).then((attributes) => {
         const timeStampIndex = attributes.findIndex((attribute) => attribute.toLowerCase().includes('time'))
         if (timeStampIndex === -1) {
@@ -201,7 +208,18 @@ app.get("/timeline", (req, res) => {
         calculateTimeline(`./public/datasets/${filename}.csv`,
             `./public/clusterResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
             .then((timeline) => {
-                res.send(timeline)
+                const writeStream = fs.createWriteStream(timelinePath)
+                writeStream.write(JSON.stringify(timeline))
+                writeStream.end()
+
+                writeStream.on('error', (error) => {
+                    console.error(error.message)
+                    res.status(500).send(error.message)
+                })
+
+                writeStream.on('finish', () => {
+                    res.send(timeline)
+                })
             }).catch((error) => {
             res.status(500).send(error.message)
         })

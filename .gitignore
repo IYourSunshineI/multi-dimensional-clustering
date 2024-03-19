@@ -19,6 +19,8 @@ dist-ssr
 !/public/clusterResults/info.md
 /public/renderResults/*
 !/public/renderResults/info.md
+/public/timelineResults/*
+!/public/timelineResults/info.md
 
 # Editor directories and files
 .vscode/*
