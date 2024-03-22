@@ -134,3 +134,24 @@ export async function getAttributes(filename: string): Promise<string[]> {
         }
     })
 }
+
+/**
+ * This function calls the server to get the history of the clustering.
+ */
+export async function clearHistory(): Promise<void> {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', '/clearHistory', true)
+    xhr.send()
+
+    return new Promise((resolve, reject) => {
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    resolve()
+                } else {
+                    reject(xhr.responseText)
+                }
+            }
+        }
+    })
+}

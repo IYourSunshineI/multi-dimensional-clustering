@@ -224,6 +224,21 @@ app.get("/timeline", (req, res) => {
 })
 
 /**
+ * Endpoint to clear the history.
+ */
+app.get('/clearHistory', (_, res) => {
+    const directories = ['clusterIndexResults', 'clusterWcssResults', 'renderResults', 'timelineResults', 'datasets_normalized']
+    directories.forEach((directory) => {
+        fs.readdirSync(`./public/${directory}`).forEach((file) => {
+            if (!file.includes('info.md')) {
+                fs.unlinkSync(`./public/${directory}/${file}`)
+            }
+        })
+    })
+    res.status(204)
+})
+
+/**
  * This function gets the value from the cache and resets the TTL
  *
  * @param key The key to get the value from

@@ -1,8 +1,10 @@
 import {attributeSelector, cancelClustering, updateScatterMatrix, updateTimeline, verifyClustering} from "./client.ts";
+import {clearHistory} from "./backendService.js";
 
 const fileSelector = document.getElementById('filesSelect') as HTMLSelectElement
 const timeSpanSelector = document.getElementById('timeSpanSelect') as HTMLSelectElement
 const startButton = document.getElementById('startButton') as HTMLButtonElement
+const clearHistoryButton = document.getElementById('clearHistoryButton') as HTMLButtonElement
 
 const attributeSelectionCancelButton = document.getElementById('attributeSelectionCancel') as HTMLButtonElement
 const attributeSelectionVerifyButton = document.getElementById('attributeSelectionVerify') as HTMLButtonElement
@@ -16,6 +18,14 @@ const loadingSymbol = document.getElementById('loading-symbol') as HTMLElement
 startButton.addEventListener('click', () => {
     if (fileSelector.value) {
         attributeSelector(fileSelector.value)
+    }
+})
+
+clearHistoryButton.addEventListener('click', () => {
+    const confirmation = confirm('Are you sure you want to delete all past results?')
+    if (confirmation) {
+        clearHistory()
+        location.reload()
     }
 })
 
@@ -65,7 +75,10 @@ batchSizeInput.addEventListener('change', () => {
 })
 
 timeSpanSelector.addEventListener('change', () => {
-    updateTimeline(parseInt(timeSpanSelector.value), kInput.valueAsNumber, maxIterationsInput.valueAsNumber, batchSizeInput.valueAsNumber)
+    loadingSymbol.classList.remove('hidden')
+    updateTimeline(parseInt(timeSpanSelector.value), kInput.valueAsNumber, maxIterationsInput.valueAsNumber, batchSizeInput.valueAsNumber).then(() => {
+        loadingSymbol.classList.add('hidden')
+    })
 })
 
 /**
