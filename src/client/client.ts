@@ -125,7 +125,7 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
     console.time('serverTime')
     const promise = cluster(currentFileName, indices, maxIterations, batchSize)
     //presentation
-    promise.then(async (result: ElbowResult) => {
+    await promise.then(async (result: ElbowResult) => {
         console.timeEnd('serverTime')
         currentElbowResult = result
 
@@ -137,7 +137,7 @@ export async function verifyClustering(k: number, maxIterations: number, batchSi
         elbow.update(elbowData.slice(1))
 
         await updateTimeline(parseInt(timeSpanDropdown.value), k, maxIterations, batchSize)
-        updateScatterMatrix(k, maxIterations, batchSize)
+        await updateScatterMatrix(k, maxIterations, batchSize)
     })
 }
 
@@ -153,7 +153,7 @@ export async function updateScatterMatrix(k: number, maxIterations: number, batc
     //render
     const imageData: FakeImageData[] = await render(currentFileName, currentAttributeIndices, maxIterations, batchSize, k, scattermatrix.width, scattermatrix.height)
     //scattermatrix
-    scattermatrix.update(imageData, currentElbowResult.attributeNames)
+    await scattermatrix.update(imageData, currentElbowResult.attributeNames)
 }
 
 /**

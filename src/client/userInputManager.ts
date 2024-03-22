@@ -11,6 +11,8 @@ const kInput = document.getElementById('kNumberInput') as HTMLInputElement
 const maxIterationsInput = document.getElementById('IterNumberInput') as HTMLInputElement
 const batchSizeInput = document.getElementById('BatchSizeInput') as HTMLInputElement
 
+const loadingSymbol = document.getElementById('loading-symbol') as HTMLElement
+
 startButton.addEventListener('click', () => {
     if (fileSelector.value) {
         attributeSelector(fileSelector.value)
@@ -29,7 +31,10 @@ attributeSelectionVerifyButton.addEventListener('click', () => {
     const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
     batchSizeInput.value = batchSize.toString()
 
-    verifyClustering(k, maxIter, batchSize)
+    loadingSymbol.classList.remove('hidden')
+    verifyClustering(k, maxIter, batchSize).then(() => {
+        loadingSymbol.classList.add('hidden')
+    })
 })
 
 kInput.addEventListener('change', () => {
@@ -40,8 +45,13 @@ kInput.addEventListener('change', () => {
     const batchSize = clamp(batchSizeInput.valueAsNumber, 0, Infinity)
     batchSizeInput.value = batchSize.toString()
 
-    updateScatterMatrix(k, maxIter, batchSize)
-    updateTimeline(parseInt(timeSpanSelector.value), k, maxIter, batchSize)
+    loadingSymbol.classList.remove('hidden')
+    const promises = []
+    promises.push(updateScatterMatrix(k, maxIter, batchSize))
+    promises.push(updateTimeline(parseInt(timeSpanSelector.value), k, maxIter, batchSize))
+    Promise.all(promises).then(() => {
+        loadingSymbol.classList.add('hidden')
+    })
 })
 
 maxIterationsInput.addEventListener('change', () => {

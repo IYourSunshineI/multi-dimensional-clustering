@@ -108,6 +108,37 @@ body, html {
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    .control-sub {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+
+        > div {
+            align-self: center;
+            > span {
+                cursor: default;
+                align-self: center;
+                animation-name: spin;
+                animation-duration: 1500ms;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear;
+            }
+        }
+    }
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes spin {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
 }
 
 .button-group {
