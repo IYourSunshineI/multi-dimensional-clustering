@@ -115,6 +115,7 @@ export class Scatterplot {
             .attr('height', this.height)
             .attr("viewBox", [0, 0, this.width, this.height])
             .attr("style", "max-width: 100%; height: auto;")
+            .style('overflow', 'visible')
 
         if(!svg) {
             console.error('Could not create svg')
@@ -137,7 +138,7 @@ export class Scatterplot {
             //create grid
             .call(g => g.select('.domain').remove())
             .call(g => g.selectAll('.tick line').clone()
-                .attr('y2', -this.height)
+                .attr('y2', -this.height + this.margin)
                 .attr('stroke-opacity', .1))
             //create axis name
             .call(g => g.append('text')
