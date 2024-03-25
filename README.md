@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
 # multi-dimensional-clustering
 
 ### Installation
@@ -31,7 +33,7 @@
 #### Clustering
 - Select the dataset you want to cluster
 - Provide your values for the inputs (**#Clusters** and **Time Span** can be changed after clustering)
-- Choose the attributes you want to cluster on, by pressing the ```start``` button and checking the corresponding checkbox in the popup 
+- Choose the attributes you want to cluster on, by pressing the <span class="material-symbols-outlined">start</span> button and checking the corresponding checkbox in the popup 
 - Press the ```start``` button in the popup to start the clustering process
 - Depending on the size of the dataset, the clustering process can take a while
 - After the process has finished you can adjust the **#Clusters** based on the Elbow-Plot (the results are rendered again based on the change)
@@ -43,4 +45,4 @@ If you wish to recalculate the results, you can press the ```clear-history``` bu
 
 
 ### About
-![image](https://github.com/IYourSunshineI/multi-dimensional-clustering/blob/main/Screenshot.png)
+![image](https://github.com/IYourSunshineI/multi-dimensional-clustering/blob/main/Screenshot.png
