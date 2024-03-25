@@ -13,16 +13,16 @@ dist-ssr
 *.local
 /test
 /public/logo.xcf
-/public/datasets_normalized/*
-!/public/datasets_normalized/info.md
-/public/clusterIndexResults/*
-!/public/clusterIndexResults/info.md
-/public/renderResults/*
-!/public/renderResults/info.md
-/public/timelineResults/*
-!/public/timelineResults/info.md
-/public/clusterWcssResults/*
-!/public/clusterWcssResults/info.md
+/public/results/datasets_normalized/*
+!/public/results/datasets_normalized/info.md
+/public/results/clusterIndexResults/*
+!/public/results/clusterIndexResults/info.md
+/public/results/renderResults/*
+!/public/results/renderResults/info.md
+/public/results/timelineResults/*
+!/public/results/timelineResults/info.md
+/public/results/clusterWcssResults/*
+!/public/results/clusterWcssResults/info.md
 
 # Editor directories and files
 .vscode/*

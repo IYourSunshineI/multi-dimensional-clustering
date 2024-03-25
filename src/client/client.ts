@@ -165,6 +165,7 @@ export async function updateScatterMatrix(k: number, maxIterations: number, batc
  * @param batchSize The size of the batch to use for the clustering algorithm
  */
 export async function updateTimeline(timeSpan: number, k: number, maxIterations: number, batchSize: number) {
+    if (!currentFileName) return
     //timeline
     const timeLineData = await getTimeline(currentFileName, currentAttributeIndices, maxIterations, batchSize, k, timeSpan)
     timeline.update(timeLineData)

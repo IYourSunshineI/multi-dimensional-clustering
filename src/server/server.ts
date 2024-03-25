@@ -75,18 +75,18 @@ app.get("/cluster", async (req, res) => {
     const maxIterations = req.query.maxIterations as unknown as number
     const batchSize = req.query.batchSize as unknown as number
 
-    const elbowResultPath = `./public/clusterWcssResults/${filename}_wcss_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    const elbowResultPath = `./public/results/clusterWcssResults/${filename}_wcss_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
     if (fs.existsSync(elbowResultPath)) {
         const elbowResult = JSON.parse(fs.readFileSync(elbowResultPath, 'utf8'))
         res.send(elbowResult)
         return
     }
 
-    if (!fs.existsSync(`./public/datasets_normalized/${filename}.csv`)) {
+    if (!fs.existsSync(`./public/results/datasets_normalized/${filename}.csv`)) {
         await normalizeData(filename)
     }
 
-    startKmeansForElbow(`./public/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
+    startKmeansForElbow(`./public/results/datasets_normalized/${filename}.csv`, selectedAttributeIndices, maxIterations, batchSize).then((clusterResult) => {
         getAttributes(filename, selectedAttributeIndices).then((attributes) => {
             const result: ElbowResult = {
                 attributeNames: attributes,
@@ -134,7 +134,7 @@ app.get("/render", (req, res) => {
     const width = req.query.width as unknown as number
     const height = req.query.height as unknown as number
 
-    const renderResultPath = `./public/renderResults/${filename}_scatterMatrix_k=${k}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    const renderResultPath = `./public/results/renderResults/${filename}_scatterMatrix_k=${k}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
     if (fs.existsSync(renderResultPath)) {
         const imageDatas = JSON.parse(fs.readFileSync(renderResultPath, 'utf8'))
         res.send(imageDatas)
@@ -142,8 +142,8 @@ app.get("/render", (req, res) => {
     }
 
 
-    renderScatterCanvases(`./public/datasets_normalized/${filename}.csv`,
-        `./public/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
+    renderScatterCanvases(`./public/results/datasets_normalized/${filename}.csv`,
+        `./public/results/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
         selectedAttributeIndices, k, width, height).then((imageDatas) => {
         const writeStream = fs.createWriteStream(renderResultPath)
         writeStream.write(JSON.stringify(imageDatas))
@@ -188,7 +188,7 @@ app.get("/timeline", (req, res) => {
     const k = parseInt(req.query.k as string)
     const timeSpan = parseInt(req.query.timeSpan as string)
 
-    const timelinePath = `./public/timelineResults/${filename}_timeline_k=${k}_timespan=${timeSpan}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
+    const timelinePath = `./public/results/timelineResults/${filename}_timeline_k=${k}_timespan=${timeSpan}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.json`
     if (fs.existsSync(timelinePath)) {
         const timeline = JSON.parse(fs.readFileSync(timelinePath, 'utf8'))
         res.send(timeline)
@@ -203,7 +203,7 @@ app.get("/timeline", (req, res) => {
         }
 
         calculateTimeline(`./public/datasets/${filename}.csv`,
-            `./public/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
+            `./public/results/clusterIndexResults/${filename}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`, k, timeStampIndex, timeSpan)
             .then((timeline) => {
                 const writeStream = fs.createWriteStream(timelinePath)
                 writeStream.write(JSON.stringify(timeline))
@@ -229,9 +229,9 @@ app.get("/timeline", (req, res) => {
 app.get('/clearHistory', (_, res) => {
     const directories = ['clusterIndexResults', 'clusterWcssResults', 'renderResults', 'timelineResults', 'datasets_normalized']
     directories.forEach((directory) => {
-        fs.readdirSync(`./public/${directory}`).forEach((file) => {
+        fs.readdirSync(`./public/results/${directory}`).forEach((file) => {
             if (!file.includes('info.md')) {
-                fs.unlinkSync(`./public/${directory}/${file}`)
+                fs.unlinkSync(`./public/results/${directory}/${file}`)
             }
         })
     })

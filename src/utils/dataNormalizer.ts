@@ -37,7 +37,7 @@ export async function normalizeData(filename: string) {
         })
 
         rl.on('close', () => {
-            const writeStream = fs.createWriteStream(`./public/datasets_normalized/${filename}.csv`)
+            const writeStream = fs.createWriteStream(`./public/results/datasets_normalized/${filename}.csv`)
             fileStream = fs.createReadStream(`./public/datasets/${filename}.csv`)
             rl = readline.createInterface({
                 input: fileStream,
