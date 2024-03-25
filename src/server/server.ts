@@ -144,7 +144,7 @@ app.get("/render", (req, res) => {
 
     renderScatterCanvases(`./public/results/datasets_normalized/${filename}.csv`,
         `./public/results/clusterIndexResults/${filename}_clusterIndices_k=${k}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`,
-        selectedAttributeIndices, k, width, height).then((imageDatas) => {
+        selectedAttributeIndices, width, height).then((imageDatas) => {
         const writeStream = fs.createWriteStream(renderResultPath)
         writeStream.write(JSON.stringify(imageDatas))
         writeStream.end()

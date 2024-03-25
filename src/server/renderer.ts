@@ -9,11 +9,10 @@ import {StreamCombiner} from "../utils/StreamCombiner.js";
  * @param path the path to the normalized data
  * @param clusterResultPath the path to the clustering result
  * @param selectedAttributeIndices the indices of the selected attributes
- * @param k the number of clusters
  * @param width the width of the canvas
  * @param height the height of the canvas
  */
-export async function renderScatterCanvases(path: string, clusterResultPath: string, selectedAttributeIndices: number[], k: number, width: number, height: number) {
+export async function renderScatterCanvases(path: string, clusterResultPath: string, selectedAttributeIndices: number[], width: number, height: number) {
     console.time('render')
 
     const margin = 15
