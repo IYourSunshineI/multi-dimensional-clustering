@@ -1,25 +1,10 @@
-import {Worker, parentPort, workerData} from "worker_threads";
-import {RenderResult, FakeImageData} from "../utils/RenderResult.js";
+import {FakeImageData} from "../utils/RenderResult.js";
 import * as d3 from "d3";
 import {colors} from "../utils/Colors.js";
 import {StreamCombiner} from "../utils/StreamCombiner.js";
 
-const __filename = new URL(import.meta.url);
-
 /**
- * This function is called when the worker is started.
- * Starts the rendering process in one cell of the scatter matrix.
- */
-parentPort?.on("message", async () => {
-    const imageData = await render(workerData.path, workerData.clusterResultPath, workerData.selectedAttributeIndices, workerData.k, workerData.margin, workerData.cellWidth, workerData.cellHeight)
-    parentPort?.postMessage({
-        ImageData: imageData,
-        index: workerData.index
-    })
-})
-
-/**
- * This function start one worker for each scatter matrix cell which then renders its cell.
+ * This function starts the rendering process
  *
  * @param path the path to the normalized data
  * @param clusterResultPath the path to the clustering result
@@ -42,67 +27,37 @@ export async function renderScatterCanvases(path: string, clusterResultPath: str
         }
     }
 
-    const promises: Promise<RenderResult>[] = []
-
-    cellAttributes.forEach((selectedAttributeIndices, index) => {
-        const worker = new Worker(__filename, {
-            workerData: {
-                path,
-                clusterResultPath,
-                selectedAttributeIndices,
-                k,
-                margin,
-                cellWidth,
-                cellHeight,
-                index
-            }
-        })
-        promises.push(new Promise<RenderResult>((resolve, reject) => {
-            worker.on("message", (message) => {
-                resolve(message)
-                worker.terminate()
-            })
-            worker.on("error", (error) => {
-                reject(error)
-            })
-        }))
-        worker.postMessage('start')
-    })
-
-    return new Promise<FakeImageData[]>((resolve, reject) => {
-        Promise.all(promises).then((values) => {
-            values.sort((a, b) => a.index - b.index)
-            resolve(values.map((value) => value.ImageData))
-            console.timeEnd('render')
-        }).catch((error) => {
-            reject(error)
-        })
-    })
+    const results: FakeImageData[] = await render(path, clusterResultPath, cellAttributes, margin, cellWidth, cellHeight)
+    console.timeEnd('render')
+    return results
 }
 
 /**
- * This function renders one cell.
+ * This function renders the cells.
  *
  * @param path the path to the normalized data
  * @param clusterResultPath the path to the clustering result
- * @param selectedAttributeIndices the indices of the selected attributes (in this case only two)
- * @param k the number of clusters
+ * @param selectedAttributeIndices the indices of the selected attributes
  * @param margin the margin of the canvas
  * @param cellWidth the width of the cell
  * @param cellHeight the height of the cell
  */
-async function render(path: string, clusterResultPath: string, selectedAttributeIndices: number[], k: number, margin: number, cellWidth: number, cellHeight: number) {
-    console.time('worker')
+async function render(path: string, clusterResultPath: string, selectedAttributeIndices: number[][], margin: number, cellWidth: number, cellHeight: number): Promise<FakeImageData[]> {
     const xScale = d3.scaleLinear().domain([0, 1]).range([margin / 2, cellWidth - margin / 2])
     const yScale = d3.scaleLinear().domain([0, 1]).range([cellHeight - margin / 2, margin / 2])
 
     const pointSize = 2
-    const imageData: FakeImageData = {
-        data: Array.from({length: cellWidth * cellHeight * 4}).fill(0) as number[],
-        colorSpace: 'srgb',
-        width: cellWidth,
-        height: cellHeight
-    }
+    const occupied = Array.from({length: selectedAttributeIndices.length}, () => {
+        return Array.from({length: cellWidth * cellHeight}, () => false)
+    })
+    const imageDatas: FakeImageData[] = Array.from({length: selectedAttributeIndices.length}, () => {
+        return {
+            data: Array.from({length: cellWidth * cellHeight * 4}) as number[],
+            colorSpace: 'srgb',
+            width: cellWidth,
+            height: cellHeight
+        }
+    })
 
     const stream = await new StreamCombiner(path, clusterResultPath).getCombinedStream()
     let lineNumber = -2
@@ -111,19 +66,25 @@ async function render(path: string, clusterResultPath: string, selectedAttribute
         if (lineNumber === -1) return
 
         const data = rawLine.split(',')
-        const attributes = data.filter((_, index) => selectedAttributeIndices.includes(index))
-        const clusterIndex = parseInt(data[data.length - (11 - k)])
-
-        const x = Math.round(xScale(parseFloat(attributes[0])))
-        const y = Math.round(yScale(parseFloat(attributes[1])))
+        const clusterIndex = parseInt(data[data.length - 1])
         const color = colors[clusterIndex]
+        for(let i = 0; i < selectedAttributeIndices.length; i++) {
+            const x = Math.round(xScale(parseFloat(data[selectedAttributeIndices[i][0]])))
+            const y = Math.round(yScale(parseFloat(data[selectedAttributeIndices[i][1]])))
 
-        renderAsCircle(imageData, x, y, color, pointSize, cellWidth, cellHeight)
+            const index = y * cellWidth + x
+            if (occupied[i][index]) {
+                continue
+            }
+
+            renderAsCircle(imageDatas[i], x, y, color, pointSize, cellWidth, cellHeight)
+            occupied[i][index] = true
+        }
     })
 
-    return new Promise<FakeImageData>((resolve) => {
+    return new Promise<FakeImageData[]>((resolve) => {
         stream.on('close', () => {
-            resolve(imageData)
+            resolve(imageDatas)
         })
     })
 }

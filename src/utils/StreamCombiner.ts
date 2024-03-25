@@ -56,30 +56,30 @@ export class StreamCombiner {
 
 
         this.stream1?.on('line', (line) => {
-            checkBuffer()
             this.buffer1.push(line)
             emitLine()
         })
 
         this.stream2?.on('line', (line) => {
-            checkBuffer()
             this.buffer2.push(line)
             emitLine()
         })
 
         this.stream1?.on('close', () => {
             fstDone = true
-            if (sndDone) {
-                combinedStream.emit('close')
-            }
+            close()
         })
 
         this.stream2?.on('close', () => {
             sndDone = true
-            if (fstDone) {
+            close()
+        })
+
+        const close = () => {
+            if(fstDone && sndDone) {
                 combinedStream.emit('close')
             }
-        })
+        }
 
         return combinedStream
     }
