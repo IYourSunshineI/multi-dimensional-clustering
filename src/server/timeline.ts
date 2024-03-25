@@ -45,7 +45,7 @@ export async function calculateTimeline(filePath: string, clusterResultPath: str
                     reject(new Error('Invalid time span'))
             }
 
-            const clusterIndex = parseInt(data[data.length - 11 + k])
+            const clusterIndex = parseInt(data[data.length - 1])
 
             if (!timeDataGroups.has(timestamp)) {
                 timeDataGroups.set(timestamp, {

@@ -16,7 +16,20 @@ const __filename = new URL(import.meta.url);
 parentPort?.on('message', async () => {
     const clusterResult = await kmeans(workerData.path, workerData.selectedAttributeIndices, workerData.k, workerData.maxIterations, workerData.batchSize)
     const wcss = await calculateWCSS(workerData.path, workerData.selectedAttributeIndices, clusterResult.centroids, clusterResult.clusterIndices)
-    parentPort?.postMessage({clusterIndices: clusterResult.clusterIndices, wcss: wcss, k: workerData.k})
+
+    const writeStream = fs.createWriteStream(workerData.resultPath)
+    writeStream.write(`${workerData.k}\n`)
+    writeStream.write(`${clusterResult.clusterIndices.join('\n')}\n`)
+    writeStream.end()
+
+    writeStream.on('error', (error) => {
+        console.error(error.message)
+        parentPort?.emit('error', {error: error.message})
+    })
+
+    writeStream.on('finish', () => {
+        parentPort?.postMessage({wcss: wcss, k: workerData.k})
+    })
 })
 
 /**
@@ -33,13 +46,15 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
     const promises: Promise<WorkerElbowResult>[] = []
 
     for (let i = 1; i <= 10; i++) {
+        const resultPath = `./public/results/clusterIndexResults/${path.split('/').pop()?.slice(0, -4)}_clusterIndices_k=${i}_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`
         const worker = new Worker(__filename, {
             workerData: {
                 path,
                 selectedAttributeIndices,
                 k: i,
                 maxIterations,
-                batchSize
+                batchSize,
+                resultPath
             }
         })
         promises.push(new Promise<WorkerElbowResult>((resolve, reject) => {
@@ -64,32 +79,12 @@ export async function startKmeansForElbow(path: string, selectedAttributeIndices
                 k: Array.from({length: 10}, (_, i) => i + 1)
             }
 
-            const clusterIndices: number[][] = Array.from({length: 10}, () => [])
             for(let i = 0; i < results.length; i++) {
                 clusterResult.wcss[results[i].k - 1] = results[i].wcss
-                clusterIndices[results[i].k - 1] = results[i].clusterIndices
             }
 
-            console.time('persistClusterIndices')
-            const writeStream = fs.createWriteStream(
-                `./public/results/clusterIndexResults/${path.split('/').pop()?.slice(0, -4)}_clusterIndices_selectedAttributeIndices=${selectedAttributeIndices}_maxIterations=${maxIterations}_batchSize=${batchSize}.csv`)
-            writeStream.write(`${clusterResult.k.join(',')}\n`)
-            for(let i = 0; i < clusterIndices[0].length; i++) {
-                writeStream.write(`${clusterIndices.map(value => value[i])}\n`)
-            }
-            writeStream.end()
-            console.timeEnd('persistClusterIndices')
-
-            writeStream.on('error', (error) => {
-                console.error(error.message)
-                reject(error)
-            })
-
-            writeStream.on('finish', () => {
-                writeStream.close()
-                console.timeEnd('ElbowMethod')
-                resolve(clusterResult)
-            })
+            console.timeEnd('ElbowMethod')
+            resolve(clusterResult)
         }).catch((error) => {
             reject(error)
         })
